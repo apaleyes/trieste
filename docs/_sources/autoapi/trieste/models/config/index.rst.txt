@@ -1,0 +1,66 @@
+:orphan:
+
+:py:mod:`trieste.models.config`
+===============================
+
+.. py:module:: trieste.models.config
+
+
+Module Contents
+---------------
+
+.. py:class:: ModelConfig
+
+   Specification for building a :class:`~trieste.models.TrainableProbabilisticModel`.
+
+   .. py:attribute:: model
+      :annotation: :tf.Module | TrainableProbabilisticModel
+
+      The :class:`~trieste.models.TrainableProbabilisticModel`, or the model to wrap in one. 
+
+
+   .. py:attribute:: model_args
+      :annotation: :dict[str, Any]
+
+      The keyword arguments to pass to the model wrapper. 
+
+
+   .. py:attribute:: optimizer
+      :annotation: :gpflow.optimizers.Scipy | tf.optimizers.Optimizer
+
+      The optimizer with which to train the model (by minimizing its loss function). 
+
+
+   .. py:attribute:: optimizer_args
+      :annotation: :dict[str, Any]
+
+      The keyword arguments to pass to the optimizer wrapper. 
+
+
+   .. py:method:: create_from_dict(d: dict[str, Any]) -> ModelConfig
+      :staticmethod:
+
+      :param d: A dictionary from which to construct this :class:`ModelConfig`.
+      :return: A :class:`ModelConfig` built from ``d``.
+      :raise TypeError: If the keys in ``d`` do not correspond to the parameters of
+          :class:`ModelConfig`.
+
+
+   .. py:method:: create_model_interface(self) -> trieste.models.model_interfaces.TrainableProbabilisticModel
+
+      :return: A model built from this model configuration.
+
+
+
+.. py:data:: ModelSpec
+   
+
+   Type alias for any type that can be used to fully specify a model. 
+
+
+.. py:function:: create_model(config: ModelSpec) -> trieste.models.model_interfaces.TrainableProbabilisticModel
+
+   :param config: A :class:`TrainableProbabilisticModel` or configuration of a model.
+   :return: A :class:`~trieste.models.TrainableProbabilisticModel` build according to ``config``.
+
+
