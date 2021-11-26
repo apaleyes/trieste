@@ -16,7 +16,7 @@ This module contains local penalization-based acquisition function builders.
 """
 from __future__ import annotations
 
-from typing import Callable, Optional, Union, cast
+from typing import Callable, Mapping, Optional, Union, cast
 
 import tensorflow as tf
 import tensorflow_probability as tfp
@@ -27,6 +27,7 @@ from ...space import SearchSpace
 from ...types import TensorType
 from ..interface import (
     AcquisitionFunction,
+    GreedyAcquisitionFunctionBuilder,
     PenalizationFunction,
     SingleModelAcquisitionBuilder,
     SingleModelGreedyAcquisitionBuilder,
@@ -349,3 +350,215 @@ class hard_local_penalizer(local_penalizer):
         p = -5  # following experiments of :cite:`Alvi:2019`.
         penalization = ((pairwise_distances / (self._radius + self._scale)) ** p + 1) ** (1 / p)
         return tf.reduce_prod(penalization, axis=-1)
+
+
+
+
+
+
+from .multi_objective import ExpectedHypervolumeImprovement
+from ...models.gpflow.models import GPRStack
+
+class MOLocalPenalizationAcquisitionFunction(SingleModelGreedyAcquisitionBuilder):
+    def __init__(
+        self
+    ):
+        self._base_builder: SingleModelAcquisitionBuilder = ExpectedHypervolumeImprovement()
+        self._base_acquisition_function: Optional[AcquisitionFunction] = None
+        self._penalization: Optional[mo_penalizer] = None
+        self._penalized_acquisition: Optional[AcquisitionFunction] = None
+
+    def prepare_acquisition_function(
+        self,
+        model: ProbabilisticModel,
+        dataset: Optional[Dataset] = None,
+        pending_points: Optional[TensorType] = None,
+    ) -> AcquisitionFunction:
+        """
+        :param model: The model.
+        :param dataset: The data from the observer. Must be populated.
+        :param pending_points: The points we penalize with respect to.
+        :return: 
+        :raise tf.errors.InvalidArgumentError: If the ``dataset`` is empty.
+        """
+        tf.debugging.Assert(dataset is not None, [])
+        dataset = cast(Dataset, dataset)
+        tf.debugging.assert_positive(len(dataset), message="Dataset must be populated.")
+
+        acq = self._update_base_acquisition_function(model, dataset)
+        if pending_points is not None and len(pending_points) != 0:
+            acq = self._update_penalization(acq, model, pending_points)
+
+        return acq
+
+    def update_acquisition_function(
+        self,
+        function: AcquisitionFunction,
+        model: ProbabilisticModel,
+        dataset: Optional[Dataset] = None,
+        pending_points: Optional[TensorType] = None,
+        new_optimization_step: bool = True,
+    ) -> AcquisitionFunction:
+        """
+        :param function: The acquisition function to update.
+        :param model: The model.
+        :param dataset: The data from the observer. Must be populated.
+        :param pending_points: Points already chosen to be in the current batch (of shape [M,D]),
+            where M is the number of pending points and D is the search space dimension.
+        :param new_optimization_step: Indicates whether this call to update_acquisition_function
+            is to start of a new optimization step, of to continue collecting batch of points
+            for the current step. Defaults to ``True``.
+        :return: The updated acquisition function.
+        """
+        tf.debugging.Assert(dataset is not None, [])
+        dataset = cast(Dataset, dataset)
+        tf.debugging.assert_positive(len(dataset), message="Dataset must be populated.")
+        tf.debugging.Assert(self._base_acquisition_function is not None, [])
+
+        if new_optimization_step:
+            self._update_base_acquisition_function(model, dataset)
+
+        if pending_points is None or len(pending_points) == 0:
+            # no penalization required if no pending_points
+            return cast(AcquisitionFunction, self._base_acquisition_function)
+
+        return self._update_penalization(function, model, pending_points)
+
+    def _update_penalization(
+        self,
+        function: Optional[AcquisitionFunction],
+        model: ProbabilisticModel,
+        pending_points: Optional[TensorType] = None,
+    ) -> AcquisitionFunction:
+        tf.debugging.assert_rank(pending_points, 2)
+
+        if self._penalized_acquisition is not None and isinstance(
+            self._penalization, mo_penalizer
+        ):
+            # if possible, just update the penalization function variables
+            self._penalization.update(pending_points)
+            return self._penalized_acquisition
+        else:
+            # otherwise construct a new penalized acquisition function
+            self._penalization = mo_penalizer(model, pending_points)
+
+            # @tf.function
+            def penalized_acquisition(x: TensorType) -> TensorType:
+                log_acq = tf.math.log(
+                    cast(AcquisitionFunction, self._base_acquisition_function)(x)
+                ) + tf.math.log(self._penalization(x))
+                return tf.math.exp(log_acq)
+
+            self._penalized_acquisition = penalized_acquisition
+            return penalized_acquisition
+
+    def _update_base_acquisition_function(
+        self, model: ProbabilisticModel, dataset: Dataset
+    ) -> AcquisitionFunction:
+        if self._base_acquisition_function is None:
+            self._base_acquisition_function = self._base_builder.prepare_acquisition_function(
+                model,
+                dataset=dataset,
+            )
+        else:
+            self._base_acquisition_function = self._base_builder.update_acquisition_function(
+                self._base_acquisition_function,
+                model,
+                dataset=dataset,
+            )
+        return self._base_acquisition_function
+
+class mo_penalizer():
+    def __init__(self, model: ProbabilisticModel, pending_points: TensorType):
+        # tf.debugging.Assert(isinstance(model, GPRStack), [])
+        self._model = model
+        tf.debugging.Assert(pending_points is not None and len(pending_points) != 0, [])
+        self._pending_points = pending_points
+
+        # self._mean_pending = {}
+        # self._cov_pending = {}
+
+        # for key in self._models:
+        #     mean, cov = self._models[key].predict(self._pending_points)
+        #     self._mean_pending[key] = mean
+        #     self._cov_pending[key] = cov
+
+    def update(
+        self,
+        pending_points: TensorType
+    ) -> None:
+        """Update the local penalizer with new variable values."""
+        self._pending_points = pending_points
+
+    # @tf.function
+    def __call__(self, xs: TensorType) -> TensorType:
+        # why is that a valid assert in LP functions?
+        # optimizer seems to pass (N, D) in
+        # tf.debugging.assert_shapes(
+        #     [(x, [..., 1, None])],
+        #     message="This penalization function cannot be calculated for batches of points.",
+        # )
+
+        # # x is [N, 1, D]
+        # print("xs", xs.get_shape())
+        x = tf.squeeze(xs, axis=1) # x is now [N, D]
+        # print("x", x.get_shape())
+        
+        # x is [N, D]
+        # pending_points is [B, D] where B is the size of the batch collected so far
+        cov_with_pending_points = self._model.covariance_between_points(x, self._pending_points) # [K, N, B], K is the number of models in the stack
+        pending_means, pending_covs = self._model.predict(self._pending_points) # pending_means is [B, K], pending_covs is [B, K]
+        x_mean, x_cov = self._model.predict(x) # x_mean is [N, K], x_cov is [N, K]
+
+        tf.debugging.assert_shapes(
+            [
+                (x, ["N", "D"]),
+                (self._pending_points, ["B", "D"]),
+                (cov_with_pending_points, ["K", "N", "B"]),
+                (pending_means, ["B", "K"]),
+                (pending_covs, ["B", "K"]),
+                (x_mean, ["N", "K"]),
+                (x_cov, ["N", "K"])
+            ],
+            message="uh-oh"
+        )
+
+        # print("x shape:", tf.shape(x))
+
+        batch_product = None
+        pp_unpacked = tf.unstack(self._pending_points, axis=0)
+        for pending_point in pp_unpacked:
+            # pending_point is [D,]
+            pending_point = tf.reshape(pending_point, (1, -1)) # [1, D]
+            penalty_product = None
+            # print("pending_point shape:", tf.shape(pending_point))
+
+            for model in self._model._models:
+                pending_mean, pending_cov = model.predict(pending_point) # mean is [1, 1], cov is [1, 1]
+                # print("pending_mean shape:", tf.shape(pending_mean))
+                # print("pending_cov shape:", tf.shape(pending_cov))
+
+                x_mean, x_cov = model.predict(x) # mean is [N, 1], cov is [N, 1]
+                # print("x_mean shape:", tf.shape(x_mean))
+                # print("x_cov shape:", tf.shape(x_cov))
+                cov_with_pending_point = model.covariance_between_points(x, pending_point) # [N, 1]
+                # print("cov_with_pending_point shape:", tf.shape(cov_with_pending_point))
+
+                mean = x_mean - pending_mean # [N, 1]
+                stddev = tf.math.sqrt(tf.math.pow(x_cov, 2.0) + tf.math.pow(pending_cov, 2.0) - 2.0 * cov_with_pending_point) # [N, 1]
+                f_diff_normal = tfp.distributions.Normal(loc=tf.squeeze(mean), scale=tf.squeeze(stddev))
+                # print("f_diff_normal:", f_diff_normal)
+
+                if penalty_product is None:
+                    penalty_product = f_diff_normal.cdf(0.0)
+                else:
+                    penalty_product = penalty_product * f_diff_normal.cdf(0.0) # P(f(x) - f(pending_point) <= 0)
+
+            # print("penalty_product shape:", tf.shape(penalty_product))
+
+            if batch_product is None:
+                batch_product = (1.0 - penalty_product)
+            else:
+                batch_product = batch_product * (1.0 - penalty_product)
+
+        return batch_product

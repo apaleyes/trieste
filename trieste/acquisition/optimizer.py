@@ -191,7 +191,10 @@ def generate_continuous_optimizer(
         """
 
         trial_search_space = space.sample(num_initial_samples)  # [num_initial_samples, D]
+        # print(trial_search_space.get_shape())
+        # print(type(target_func))
         target_func_values = target_func(trial_search_space[:, None, :])  # [num_samples, 1]
+        # print(target_func_values.get_shape())
         _, top_k_indicies = tf.math.top_k(
             target_func_values[:, 0], k=num_optimization_runs
         )  # [num_optimization_runs]
