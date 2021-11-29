@@ -447,7 +447,7 @@ class MOLocalPenalizationAcquisitionFunction(SingleModelGreedyAcquisitionBuilder
             import numpy as np
             import math 
             
-            x = np.linspace(0, 2*math.pi, 100)
+            x = np.linspace(0, 2*math.pi, 1000)
             y = fn(x.reshape(-1, 1, 1))
 
             plt.plot(x, y, label=label, c=c)
@@ -460,10 +460,14 @@ class MOLocalPenalizationAcquisitionFunction(SingleModelGreedyAcquisitionBuilder
             return tf.math.exp(log_acq)
 
         plt.figure()
+        plt.vlines(tf.squeeze(pending_points), ymin=0, ymax=1, label="batch points so far", colors="green")
         plot_fn(self._base_acquisition_function, "base function", c="blue")
         plot_fn(self._penalization, "penalization", c="red")
-        # plot_fn(penalized_acquisition, "penalized acquisition", c="purple")
-        plt.vlines(tf.squeeze(pending_points), ymin=0, ymax=1, label="batch points so far", colors="green")
+        plot_fn(penalized_acquisition, "penalized acquisition", c="purple")
+        tf.print("------------------------------------")
+        tf.print(pending_points)
+        tf.print(self._penalization(tf.expand_dims(pending_points, axis=1)))
+        tf.print("------------------------------------")
         plt.legend()
         plt.show()
 
@@ -510,15 +514,7 @@ class mo_penalizer():
 
     # @tf.function
     def __call__(self, x: TensorType) -> TensorType:
-        # why is that a valid assert in LP functions?
-        # optimizer seems to pass (N, D) in
-        # tf.debugging.assert_shapes(
-        #     [(x, [..., 1, None])],
-        #     message="This penalization function cannot be calculated for batches of points.",
-        # )
-
-
-        # # x is [N, 1, D]
+        # x is [N, 1, D]
         x = tf.squeeze(x, axis=1) # x is now [N, D]
 
         # pending_points is [B, D] where B is the size of the batch collected so far
@@ -539,32 +535,39 @@ class mo_penalizer():
             message="uh-oh"
         )
 
-        N = tf.shape(x)[0]
-        B = tf.shape(self._pending_points)[0]
-        K = tf.shape(cov_with_pending_points)[-1]
+        # N = tf.shape(x)[0]
+        # B = tf.shape(self._pending_points)[0]
+        # K = tf.shape(cov_with_pending_points)[-1]
 
-        x_means_expanded = tf.tile(tf.expand_dims(x_means, axis=1), [1, B, 1])
-        x_covs_expanded = tf.tile(tf.expand_dims(x_covs, axis=1), [1, B, 1])
-        pending_means_expanded = tf.tile(tf.expand_dims(pending_means, axis=0), [N, 1, 1])
-        pending_covs_expanded = tf.tile(tf.expand_dims(pending_covs, axis=0), [N, 1, 1])
+        x_means_expanded = x_means[:, None, :]
+        x_covs_expanded = x_covs[:, None, :]
+        pending_means_expanded = pending_means[None, :, :]
+        pending_covs_expanded = pending_covs[None, :, :]
+
+        # tf.print(x_covs_expanded)
+        # tf.print(pending_covs_expanded)
+        # tf.print(cov_with_pending_points)
+        # tf.print(x_covs_expanded + pending_covs_expanded - 2.0 * cov_with_pending_points)
+
+        mean = x_means_expanded - pending_means_expanded
+        stddev = tf.math.sqrt(tf.maximum(x_covs_expanded + pending_covs_expanded - 2.0 * cov_with_pending_points, 1e-10))
+        f_diff_normal = tfp.distributions.Normal(loc=mean, scale=stddev)
+        cdf = f_diff_normal.cdf(0.0)
 
         tf.debugging.assert_shapes(
             [
-                (x_means_expanded, ["N", "B", "K"]),
-                (x_covs_expanded, ["N", "B", "K"]),
-                (pending_means_expanded, ["N", "B", "K"]),
-                (pending_covs_expanded, ["N", "B", "K"]),
-                (cov_with_pending_points, ["N", "B", "K"])
+                (x, ["N", "D"]),
+                (self._pending_points, ["B", "D"]),
+                (mean, ["N", "B", "K"]),
+                (stddev, ["N", "B", "K"]),
+                (cdf, ["N", "B", "K"])
             ],
             message="uh-oh-oh"
         )
 
-        mean = x_means_expanded - pending_means_expanded
-        stddev = tf.math.sqrt(x_covs_expanded + pending_covs_expanded - 2.0 * cov_with_pending_points)
-
-        f_diff_normal = tfp.distributions.Normal(loc=mean, scale=stddev)
-        cdf = f_diff_normal.cdf(0.0)
-
+        # tf.print(mean)
+        # tf.print(stddev)
+        # tf.print(cdf)
         penalty = tf.reduce_prod((1.0 - tf.reduce_prod(cdf, axis=-1)), axis=-1)
 
-        return penalty
+        return tf.reshape(penalty, (-1, 1))
