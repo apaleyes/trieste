@@ -432,25 +432,43 @@ class MOLocalPenalizationAcquisitionFunction(SingleModelGreedyAcquisitionBuilder
     ) -> AcquisitionFunction:
         tf.debugging.assert_rank(pending_points, 2)
 
-        if self._penalized_acquisition is not None and isinstance(
-            self._penalization, mo_penalizer
-        ):
-            # if possible, just update the penalization function variables
-            self._penalization.update(pending_points)
-            return self._penalized_acquisition
-        else:
-            # otherwise construct a new penalized acquisition function
-            self._penalization = mo_penalizer(model, pending_points)
+        # if self._penalized_acquisition is not None and isinstance(
+        #     self._penalization, mo_penalizer
+        # ):
+        #     # if possible, just update the penalization function variables
+        #     self._penalization.update(pending_points)
+        #     return self._penalized_acquisition
+        # else:
+        # otherwise construct a new penalized acquisition function
+        self._penalization = mo_penalizer(model, pending_points)
+        import matplotlib.pyplot as plt
 
-            # @tf.function
-            def penalized_acquisition(x: TensorType) -> TensorType:
-                log_acq = tf.math.log(
-                    cast(AcquisitionFunction, self._base_acquisition_function)(x)
-                ) + tf.math.log(self._penalization(x))
-                return tf.math.exp(log_acq)
+        def plot_fn(fn, label, c):
+            import numpy as np
+            import math 
+            
+            x = np.linspace(0, 2*math.pi, 100)
+            y = fn(x.reshape(-1, 1, 1))
 
-            self._penalized_acquisition = penalized_acquisition
-            return penalized_acquisition
+            plt.plot(x, y, label=label, c=c)
+
+        # @tf.function
+        def penalized_acquisition(x: TensorType) -> TensorType:
+            log_acq = tf.math.log(
+                cast(AcquisitionFunction, self._base_acquisition_function)(x)
+            ) + tf.math.log(self._penalization(x))
+            return tf.math.exp(log_acq)
+
+        plt.figure()
+        plot_fn(self._base_acquisition_function, "base function", c="blue")
+        plot_fn(self._penalization, "penalization", c="red")
+        # plot_fn(penalized_acquisition, "penalized acquisition", c="purple")
+        plt.vlines(tf.squeeze(pending_points), ymin=0, ymax=1, label="batch points so far", colors="green")
+        plt.legend()
+        plt.show()
+
+        self._penalized_acquisition = penalized_acquisition
+        return penalized_acquisition
 
     def _update_base_acquisition_function(
         self, model: ProbabilisticModel, dataset: Dataset
@@ -491,7 +509,7 @@ class mo_penalizer():
         self._pending_points = pending_points
 
     # @tf.function
-    def __call__(self, xs: TensorType) -> TensorType:
+    def __call__(self, x: TensorType) -> TensorType:
         # why is that a valid assert in LP functions?
         # optimizer seems to pass (N, D) in
         # tf.debugging.assert_shapes(
@@ -499,66 +517,54 @@ class mo_penalizer():
         #     message="This penalization function cannot be calculated for batches of points.",
         # )
 
+
         # # x is [N, 1, D]
-        # print("xs", xs.get_shape())
-        x = tf.squeeze(xs, axis=1) # x is now [N, D]
-        # print("x", x.get_shape())
-        
-        # x is [N, D]
+        x = tf.squeeze(x, axis=1) # x is now [N, D]
+
         # pending_points is [B, D] where B is the size of the batch collected so far
-        cov_with_pending_points = self._model.covariance_between_points(x, self._pending_points) # [K, N, B], K is the number of models in the stack
+        cov_with_pending_points = self._model.covariance_between_points(x, self._pending_points) # [N, B, K], K is the number of models in the stack
         pending_means, pending_covs = self._model.predict(self._pending_points) # pending_means is [B, K], pending_covs is [B, K]
-        x_mean, x_cov = self._model.predict(x) # x_mean is [N, K], x_cov is [N, K]
+        x_means, x_covs = self._model.predict(x) # x_mean is [N, K], x_cov is [N, K]
 
         tf.debugging.assert_shapes(
             [
                 (x, ["N", "D"]),
                 (self._pending_points, ["B", "D"]),
-                (cov_with_pending_points, ["K", "N", "B"]),
+                (cov_with_pending_points, ["N", "B", "K"]),
                 (pending_means, ["B", "K"]),
                 (pending_covs, ["B", "K"]),
-                (x_mean, ["N", "K"]),
-                (x_cov, ["N", "K"])
+                (x_means, ["N", "K"]),
+                (x_covs, ["N", "K"])
             ],
             message="uh-oh"
         )
 
-        # print("x shape:", tf.shape(x))
+        N = tf.shape(x)[0]
+        B = tf.shape(self._pending_points)[0]
+        K = tf.shape(cov_with_pending_points)[-1]
 
-        batch_product = None
-        pp_unpacked = tf.unstack(self._pending_points, axis=0)
-        for pending_point in pp_unpacked:
-            # pending_point is [D,]
-            pending_point = tf.reshape(pending_point, (1, -1)) # [1, D]
-            penalty_product = None
-            # print("pending_point shape:", tf.shape(pending_point))
+        x_means_expanded = tf.tile(tf.expand_dims(x_means, axis=1), [1, B, 1])
+        x_covs_expanded = tf.tile(tf.expand_dims(x_covs, axis=1), [1, B, 1])
+        pending_means_expanded = tf.tile(tf.expand_dims(pending_means, axis=0), [N, 1, 1])
+        pending_covs_expanded = tf.tile(tf.expand_dims(pending_covs, axis=0), [N, 1, 1])
 
-            for model in self._model._models:
-                pending_mean, pending_cov = model.predict(pending_point) # mean is [1, 1], cov is [1, 1]
-                # print("pending_mean shape:", tf.shape(pending_mean))
-                # print("pending_cov shape:", tf.shape(pending_cov))
+        tf.debugging.assert_shapes(
+            [
+                (x_means_expanded, ["N", "B", "K"]),
+                (x_covs_expanded, ["N", "B", "K"]),
+                (pending_means_expanded, ["N", "B", "K"]),
+                (pending_covs_expanded, ["N", "B", "K"]),
+                (cov_with_pending_points, ["N", "B", "K"])
+            ],
+            message="uh-oh-oh"
+        )
 
-                x_mean, x_cov = model.predict(x) # mean is [N, 1], cov is [N, 1]
-                # print("x_mean shape:", tf.shape(x_mean))
-                # print("x_cov shape:", tf.shape(x_cov))
-                cov_with_pending_point = model.covariance_between_points(x, pending_point) # [N, 1]
-                # print("cov_with_pending_point shape:", tf.shape(cov_with_pending_point))
+        mean = x_means_expanded - pending_means_expanded
+        stddev = tf.math.sqrt(x_covs_expanded + pending_covs_expanded - 2.0 * cov_with_pending_points)
 
-                mean = x_mean - pending_mean # [N, 1]
-                stddev = tf.math.sqrt(tf.math.pow(x_cov, 2.0) + tf.math.pow(pending_cov, 2.0) - 2.0 * cov_with_pending_point) # [N, 1]
-                f_diff_normal = tfp.distributions.Normal(loc=tf.squeeze(mean), scale=tf.squeeze(stddev))
-                # print("f_diff_normal:", f_diff_normal)
+        f_diff_normal = tfp.distributions.Normal(loc=mean, scale=stddev)
+        cdf = f_diff_normal.cdf(0.0)
 
-                if penalty_product is None:
-                    penalty_product = f_diff_normal.cdf(0.0)
-                else:
-                    penalty_product = penalty_product * f_diff_normal.cdf(0.0) # P(f(x) - f(pending_point) <= 0)
+        penalty = tf.reduce_prod((1.0 - tf.reduce_prod(cdf, axis=-1)), axis=-1)
 
-            # print("penalty_product shape:", tf.shape(penalty_product))
-
-            if batch_product is None:
-                batch_product = (1.0 - penalty_product)
-            else:
-                batch_product = batch_product * (1.0 - penalty_product)
-
-        return batch_product
+        return penalty

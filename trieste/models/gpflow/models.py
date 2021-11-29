@@ -243,7 +243,7 @@ class GPRStack(ModelStack):
         the resulting object shape is (K, N, M).
         """
         covs_between_points = [model.covariance_between_points(query_points_1, query_points_2) for model in self._models]
-        return tf.stack(covs_between_points, axis=0)
+        return tf.stack(covs_between_points, axis=-1)
 
 
 class NumDataPropertyMixin:

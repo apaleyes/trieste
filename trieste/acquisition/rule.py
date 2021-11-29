@@ -201,18 +201,7 @@ class EfficientGlobalOptimization(AcquisitionRule[TensorType, SP_contra]):
                 models,
                 datasets=datasets,
             )
-        import matplotlib.pyplot as plt
-        
-        def plot_acquisition(acq, points=None):
-            import numpy as np 
-            
-            x = np.linspace(-2, 2, 100)
-            y = acq(x.reshape(-1, 1, 1))
 
-            plt.plot(x, y)
-        
-        plot_acquisition(self._acquisition_function)
-        plt.show()
         points = self._optimizer(search_space, self._acquisition_function)
 
         summary_writer = get_tensorboard_writer()
@@ -223,8 +212,6 @@ class EfficientGlobalOptimization(AcquisitionRule[TensorType, SP_contra]):
                 value = self._acquisition_function(batched_points)[0][0]
                 tf.summary.scalar("EGO.acquisition_function.maximum_found", value)
 
-        plot_acquisition(self._acquisition_function)
-        plt.show()
         if isinstance(self._builder, GreedyAcquisitionFunctionBuilder):
             for i in range(
                 self._num_query_points - 1
