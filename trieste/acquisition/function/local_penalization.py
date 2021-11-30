@@ -466,7 +466,9 @@ class MOLocalPenalizationAcquisitionFunction(SingleModelGreedyAcquisitionBuilder
         plot_fn(penalized_acquisition, "penalized acquisition", c="purple")
         tf.print("------------------------------------")
         tf.print(pending_points)
+        tf.print(self._base_acquisition_function(tf.expand_dims(pending_points, axis=1)))
         tf.print(self._penalization(tf.expand_dims(pending_points, axis=1)))
+        tf.print(penalized_acquisition(tf.expand_dims(pending_points, axis=1)))
         tf.print("------------------------------------")
         plt.legend()
         plt.show()
@@ -549,10 +551,20 @@ class mo_penalizer():
         # tf.print(cov_with_pending_points)
         # tf.print(x_covs_expanded + pending_covs_expanded - 2.0 * cov_with_pending_points)
 
-        mean = x_means_expanded - pending_means_expanded
-        stddev = tf.math.sqrt(tf.maximum(x_covs_expanded + pending_covs_expanded - 2.0 * cov_with_pending_points, 1e-10))
+        CLAMP_LB = 1e-10
+        variance = x_covs_expanded + pending_covs_expanded - 2.0 * cov_with_pending_points
+        variance = tf.clip_by_value(variance, CLAMP_LB, variance.dtype.max)
+
+        mean = pending_means_expanded - x_means_expanded
+        stddev = tf.math.sqrt(variance)
+
+        # print(variance)
+        # print(stddev)
+
         f_diff_normal = tfp.distributions.Normal(loc=mean, scale=stddev)
         cdf = f_diff_normal.cdf(0.0)
+
+        # print(cdf)
 
         tf.debugging.assert_shapes(
             [
@@ -568,6 +580,6 @@ class mo_penalizer():
         # tf.print(mean)
         # tf.print(stddev)
         # tf.print(cdf)
-        penalty = tf.reduce_prod((1.0 - tf.reduce_prod(cdf, axis=-1)), axis=-1)
+        penalty = tf.reduce_prod((1.0 - tf.reduce_prod(1 - cdf, axis=-1)), axis=-1)
 
         return tf.reshape(penalty, (-1, 1))
