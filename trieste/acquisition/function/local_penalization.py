@@ -551,10 +551,12 @@ class mo_penalizer():
         # tf.print(cov_with_pending_points)
         # tf.print(x_covs_expanded + pending_covs_expanded - 2.0 * cov_with_pending_points)
 
-        CLAMP_LB = 1e-10
+        CLAMP_LB = 1e-12
         variance = x_covs_expanded + pending_covs_expanded - 2.0 * cov_with_pending_points
         variance = tf.clip_by_value(variance, CLAMP_LB, variance.dtype.max)
 
+        # mean = tf.clip_by_value(pending_means_expanded - x_means_expanded, CLAMP_LB, x_means_expanded.dtype.max)
+        # stddev = tf.clip_by_value(tf.math.sqrt(variance), CLAMP_LB, variance.dtype.max)
         mean = pending_means_expanded - x_means_expanded
         stddev = tf.math.sqrt(variance)
 
@@ -580,6 +582,7 @@ class mo_penalizer():
         # tf.print(mean)
         # tf.print(stddev)
         # tf.print(cdf)
-        penalty = tf.reduce_prod((1.0 - tf.reduce_prod(1 - cdf, axis=-1)), axis=-1)
+        # penalty = tf.reduce_prod((1.0 - tf.reduce_prod(1 - cdf, axis=-1)), axis=-1)
+        penalty = tf.reduce_prod(1.0 - tf.reduce_prod(cdf, axis=-1), axis=-1)
 
         return tf.reshape(penalty, (-1, 1))
