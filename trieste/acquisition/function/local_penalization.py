@@ -27,7 +27,6 @@ from ...space import SearchSpace
 from ...types import TensorType
 from ..interface import (
     AcquisitionFunction,
-    GreedyAcquisitionFunctionBuilder,
     PenalizationFunction,
     SingleModelAcquisitionBuilder,
     SingleModelGreedyAcquisitionBuilder,
@@ -357,7 +356,6 @@ class hard_local_penalizer(local_penalizer):
 
 
 from .multi_objective import ExpectedHypervolumeImprovement
-from ...models.gpflow.models import GPRStack
 
 class MOLocalPenalizationAcquisitionFunction(SingleModelGreedyAcquisitionBuilder):
     def __init__(
@@ -426,31 +424,33 @@ class MOLocalPenalizationAcquisitionFunction(SingleModelGreedyAcquisitionBuilder
 
     def _update_penalization(
         self,
-        function: Optional[AcquisitionFunction],
+        function: AcquisitionFunction,
         model: ProbabilisticModel,
         pending_points: Optional[TensorType] = None,
     ) -> AcquisitionFunction:
         tf.debugging.assert_rank(pending_points, 2)
 
-        # if self._penalized_acquisition is not None and isinstance(
-        #     self._penalization, mo_penalizer
-        # ):
-        #     # if possible, just update the penalization function variables
-        #     self._penalization.update(pending_points)
-        #     return self._penalized_acquisition
-        # else:
-        # otherwise construct a new penalized acquisition function
-        self._penalization = mo_penalizer(model, pending_points)
-        import matplotlib.pyplot as plt
+        if self._penalized_acquisition is not None and isinstance(
+            self._penalization, mo_penalizer
+        ):
+            # if possible, just update the penalization function variables
+            self._penalization.update(pending_points)
+            return self._penalized_acquisition
+        else:
+            # otherwise construct a new penalized acquisition function
+            self._penalization = mo_penalizer(model, pending_points)
 
-        def plot_fn(fn, label, c):
-            import numpy as np
-            import math 
+        # # handy plotting for acquisition function
+        # import matplotlib.pyplot as plt
+
+        # def plot_fn(fn, label, c):
+        #     import numpy as np
+        #     import math 
             
-            x = np.linspace(0, 2*math.pi, 1000)
-            y = fn(x.reshape(-1, 1, 1))
+        #     x = np.linspace(0, 2*math.pi, 1000)
+        #     y = fn(x.reshape(-1, 1, 1))
 
-            plt.plot(x, y, label=label, c=c)
+        #     plt.plot(x, y, label=label, c=c)
 
         @tf.function
         def penalized_acquisition(x: TensorType) -> TensorType:
@@ -459,6 +459,7 @@ class MOLocalPenalizationAcquisitionFunction(SingleModelGreedyAcquisitionBuilder
             ) + tf.math.log(self._penalization(x))
             return tf.math.exp(log_acq)
 
+        # # plot acquisition function and batch points
         # plt.figure()
         # plt.vlines(tf.squeeze(pending_points), ymin=0, ymax=1, label="batch points so far", colors="green")
         # plot_fn(self._base_acquisition_function, "base function", c="blue")
@@ -494,25 +495,25 @@ class MOLocalPenalizationAcquisitionFunction(SingleModelGreedyAcquisitionBuilder
 
 class mo_penalizer():
     def __init__(self, model: ProbabilisticModel, pending_points: TensorType):
-        # tf.debugging.Assert(isinstance(model, GPRStack), [])
-        self._model = model
         tf.debugging.Assert(pending_points is not None and len(pending_points) != 0, [])
-        self._pending_points = pending_points
 
-        # self._mean_pending = {}
-        # self._cov_pending = {}
-
-        # for key in self._models:
-        #     mean, cov = self._models[key].predict(self._pending_points)
-        #     self._mean_pending[key] = mean
-        #     self._cov_pending[key] = cov
+        self._model = model
+        self._pending_points = tf.Variable(pending_points, shape=[None, *pending_points.shape[1:]])
+        pending_means, pending_vars = self._model.predict(self._pending_points)
+        self._pending_means = tf.Variable(pending_means, shape=[None, *pending_means.shape[1:]])
+        self._pending_vars = tf.Variable(pending_vars, shape=[None, *pending_vars.shape[1:]])
 
     def update(
         self,
         pending_points: TensorType
     ) -> None:
-        """Update the local penalizer with new variable values."""
-        self._pending_points = pending_points
+        """Update the local penalizer with new pending points."""
+        tf.debugging.Assert(pending_points is not None and len(pending_points) != 0, [])
+
+        self._pending_points.assign(pending_points)
+        pending_means, pending_vars = self._model.predict(self._pending_points)
+        self._pending_means.assign(pending_means)
+        self._pending_vars.assign(pending_vars)
 
     # @tf.function
     # def __call__(self, x: TensorType) -> TensorType:
@@ -591,36 +592,34 @@ class mo_penalizer():
     def __call__(self, x: TensorType) -> TensorType:
         # x is [N, 1, D]
         x = tf.squeeze(x, axis=1) # x is now [N, D]
+        x_means, x_vars = self._model.predict(x) # x_means is [N, K], x_vars is [N, K], where K is the number of models/objectives
 
         # self._pending_points is [B, D] where B is the size of the batch collected so far
-        # cov_with_pending_points = self._model.covariance_between_points(x, self._pending_points) # [N, B, K], K is the number of models in the stack
-
-        pending_means, pending_vars = self._model.predict(self._pending_points) # pending_means is [B, K], pending_vars is [B, K]
-        x_means, x_vars = self._model.predict(x) # x_means is [N, K], x_vars is [N, K]
-
         tf.debugging.assert_shapes(
             [
                 (x, ["N", "D"]),
                 (self._pending_points, ["B", "D"]),
-                # (cov_with_pending_points, ["N", "B", "K"]),
-                (pending_means, ["B", "K"]),
-                (pending_vars, ["B", "K"]),
+                (self._pending_means, ["B", "K"]),
+                (self._pending_vars, ["B", "K"]),
                 (x_means, ["N", "K"]),
                 (x_vars, ["N", "K"])
             ],
-            message="uh-oh"
+            message="Encountered unexpected shapes while calculating mean and variance of given point x and pending points"
         )
 
-        
         x_means_expanded = x_means[:, None, :]
-        pending_means_expanded = pending_means[None, :, :]
-        pending_vars_expanded = pending_vars[None, :, :]
+        pending_means_expanded = self._pending_means[None, :, :]
+        pending_vars_expanded = self._pending_vars[None, :, :]
         pending_stddevs_expanded = tf.sqrt(pending_vars_expanded)
         standardize_mean_diff = (x_means_expanded - pending_means_expanded) / pending_stddevs_expanded # [N, B, K]
 
         d = tf.norm(standardize_mean_diff, axis=-1) # [N, B]
 
+        # warp the distance so that resulting value is from 0 to nearly 1
+        # 2 * (sigmoid(d) - 0.5)
         warped_d = 2 * (1.0 / (1.0 + tf.exp(-d)) - 0.5) # [N, B]
+        # 1 - 1/(1+d)
+        # warped_d = 1.0 - 1.0 / (1.0 + d) # [N, B]
 
         penalty = tf.reduce_prod(warped_d, axis=-1) # [N,]
 
