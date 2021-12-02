@@ -452,26 +452,26 @@ class MOLocalPenalizationAcquisitionFunction(SingleModelGreedyAcquisitionBuilder
 
             plt.plot(x, y, label=label, c=c)
 
-        # @tf.function
+        @tf.function
         def penalized_acquisition(x: TensorType) -> TensorType:
             log_acq = tf.math.log(
                 cast(AcquisitionFunction, self._base_acquisition_function)(x)
             ) + tf.math.log(self._penalization(x))
             return tf.math.exp(log_acq)
 
-        plt.figure()
-        plt.vlines(tf.squeeze(pending_points), ymin=0, ymax=1, label="batch points so far", colors="green")
-        plot_fn(self._base_acquisition_function, "base function", c="blue")
-        plot_fn(self._penalization, "penalization", c="red")
-        plot_fn(penalized_acquisition, "penalized acquisition", c="purple")
-        tf.print("------------------------------------")
-        tf.print(pending_points)
-        tf.print(self._base_acquisition_function(tf.expand_dims(pending_points, axis=1)))
-        tf.print(self._penalization(tf.expand_dims(pending_points, axis=1)))
-        tf.print(penalized_acquisition(tf.expand_dims(pending_points, axis=1)))
-        tf.print("------------------------------------")
-        plt.legend()
-        plt.show()
+        # plt.figure()
+        # plt.vlines(tf.squeeze(pending_points), ymin=0, ymax=1, label="batch points so far", colors="green")
+        # plot_fn(self._base_acquisition_function, "base function", c="blue")
+        # plot_fn(self._penalization, "penalization", c="red")
+        # plot_fn(penalized_acquisition, "penalized acquisition", c="purple")
+        # # tf.print("------------------------------------")
+        # # tf.print(pending_points)
+        # # tf.print(self._base_acquisition_function(tf.expand_dims(pending_points, axis=1)))
+        # # tf.print(self._penalization(tf.expand_dims(pending_points, axis=1)))
+        # # tf.print(penalized_acquisition(tf.expand_dims(pending_points, axis=1)))
+        # # tf.print("------------------------------------")
+        # plt.legend()
+        # plt.show()
 
         self._penalized_acquisition = penalized_acquisition
         return penalized_acquisition
@@ -515,74 +515,113 @@ class mo_penalizer():
         self._pending_points = pending_points
 
     # @tf.function
+    # def __call__(self, x: TensorType) -> TensorType:
+    #     # x is [N, 1, D]
+    #     x = tf.squeeze(x, axis=1) # x is now [N, D]
+
+    #     # pending_points is [B, D] where B is the size of the batch collected so far
+    #     cov_with_pending_points = self._model.covariance_between_points(x, self._pending_points) # [N, B, K], K is the number of models in the stack
+    #     pending_means, pending_covs = self._model.predict(self._pending_points) # pending_means is [B, K], pending_covs is [B, K]
+    #     x_means, x_covs = self._model.predict(x) # x_mean is [N, K], x_cov is [N, K]
+
+    #     tf.debugging.assert_shapes(
+    #         [
+    #             (x, ["N", "D"]),
+    #             (self._pending_points, ["B", "D"]),
+    #             (cov_with_pending_points, ["N", "B", "K"]),
+    #             (pending_means, ["B", "K"]),
+    #             (pending_covs, ["B", "K"]),
+    #             (x_means, ["N", "K"]),
+    #             (x_covs, ["N", "K"])
+    #         ],
+    #         message="uh-oh"
+    #     )
+
+    #     # N = tf.shape(x)[0]
+    #     # B = tf.shape(self._pending_points)[0]
+    #     # K = tf.shape(cov_with_pending_points)[-1]
+
+    #     x_means_expanded = x_means[:, None, :]
+    #     x_covs_expanded = x_covs[:, None, :]
+    #     pending_means_expanded = pending_means[None, :, :]
+    #     pending_covs_expanded = pending_covs[None, :, :]
+
+    #     # tf.print(x_covs_expanded)
+    #     # tf.print(pending_covs_expanded)
+    #     # tf.print(cov_with_pending_points)
+    #     # tf.print(x_covs_expanded + pending_covs_expanded - 2.0 * cov_with_pending_points)
+
+    #     CLAMP_LB = 1e-12
+    #     variance = x_covs_expanded + pending_covs_expanded - 2.0 * cov_with_pending_points
+    #     variance = tf.clip_by_value(variance, CLAMP_LB, variance.dtype.max)
+
+    #     # mean = tf.clip_by_value(pending_means_expanded - x_means_expanded, CLAMP_LB, x_means_expanded.dtype.max)
+    #     # stddev = tf.clip_by_value(tf.math.sqrt(variance), CLAMP_LB, variance.dtype.max)
+    #     mean = pending_means_expanded - x_means_expanded
+    #     stddev = tf.math.sqrt(variance)
+
+    #     # print(variance)
+    #     # print(stddev)
+
+    #     f_diff_normal = tfp.distributions.Normal(loc=mean, scale=stddev)
+    #     cdf = f_diff_normal.cdf(0.0)
+
+    #     # print(cdf)
+
+    #     tf.debugging.assert_shapes(
+    #         [
+    #             (x, ["N", "D"]),
+    #             (self._pending_points, ["B", "D"]),
+    #             (mean, ["N", "B", "K"]),
+    #             (stddev, ["N", "B", "K"]),
+    #             (cdf, ["N", "B", "K"])
+    #         ],
+    #         message="uh-oh-oh"
+    #     )
+
+    #     # tf.print(mean)
+    #     # tf.print(stddev)
+    #     # tf.print(cdf)
+    #     # penalty = tf.reduce_prod((1.0 - tf.reduce_prod(1 - cdf, axis=-1)), axis=-1)
+    #     penalty = tf.reduce_prod(1.0 - tf.reduce_prod(cdf, axis=-1), axis=-1)
+
+    #     return tf.reshape(penalty, (-1, 1))
+
+    @tf.function
     def __call__(self, x: TensorType) -> TensorType:
         # x is [N, 1, D]
         x = tf.squeeze(x, axis=1) # x is now [N, D]
 
-        # pending_points is [B, D] where B is the size of the batch collected so far
-        cov_with_pending_points = self._model.covariance_between_points(x, self._pending_points) # [N, B, K], K is the number of models in the stack
-        pending_means, pending_covs = self._model.predict(self._pending_points) # pending_means is [B, K], pending_covs is [B, K]
-        x_means, x_covs = self._model.predict(x) # x_mean is [N, K], x_cov is [N, K]
+        # self._pending_points is [B, D] where B is the size of the batch collected so far
+        # cov_with_pending_points = self._model.covariance_between_points(x, self._pending_points) # [N, B, K], K is the number of models in the stack
+
+        pending_means, pending_vars = self._model.predict(self._pending_points) # pending_means is [B, K], pending_vars is [B, K]
+        x_means, x_vars = self._model.predict(x) # x_means is [N, K], x_vars is [N, K]
 
         tf.debugging.assert_shapes(
             [
                 (x, ["N", "D"]),
                 (self._pending_points, ["B", "D"]),
-                (cov_with_pending_points, ["N", "B", "K"]),
+                # (cov_with_pending_points, ["N", "B", "K"]),
                 (pending_means, ["B", "K"]),
-                (pending_covs, ["B", "K"]),
+                (pending_vars, ["B", "K"]),
                 (x_means, ["N", "K"]),
-                (x_covs, ["N", "K"])
+                (x_vars, ["N", "K"])
             ],
             message="uh-oh"
         )
 
-        # N = tf.shape(x)[0]
-        # B = tf.shape(self._pending_points)[0]
-        # K = tf.shape(cov_with_pending_points)[-1]
-
+        
         x_means_expanded = x_means[:, None, :]
-        x_covs_expanded = x_covs[:, None, :]
         pending_means_expanded = pending_means[None, :, :]
-        pending_covs_expanded = pending_covs[None, :, :]
+        pending_vars_expanded = pending_vars[None, :, :]
+        pending_stddevs_expanded = tf.sqrt(pending_vars_expanded)
+        standardize_mean_diff = (x_means_expanded - pending_means_expanded) / pending_stddevs_expanded # [N, B, K]
 
-        # tf.print(x_covs_expanded)
-        # tf.print(pending_covs_expanded)
-        # tf.print(cov_with_pending_points)
-        # tf.print(x_covs_expanded + pending_covs_expanded - 2.0 * cov_with_pending_points)
+        d = tf.norm(standardize_mean_diff, axis=-1) # [N, B]
 
-        CLAMP_LB = 1e-12
-        variance = x_covs_expanded + pending_covs_expanded - 2.0 * cov_with_pending_points
-        variance = tf.clip_by_value(variance, CLAMP_LB, variance.dtype.max)
+        warped_d = 2 * (1.0 / (1.0 + tf.exp(-d)) - 0.5) # [N, B]
 
-        # mean = tf.clip_by_value(pending_means_expanded - x_means_expanded, CLAMP_LB, x_means_expanded.dtype.max)
-        # stddev = tf.clip_by_value(tf.math.sqrt(variance), CLAMP_LB, variance.dtype.max)
-        mean = pending_means_expanded - x_means_expanded
-        stddev = tf.math.sqrt(variance)
-
-        # print(variance)
-        # print(stddev)
-
-        f_diff_normal = tfp.distributions.Normal(loc=mean, scale=stddev)
-        cdf = f_diff_normal.cdf(0.0)
-
-        # print(cdf)
-
-        tf.debugging.assert_shapes(
-            [
-                (x, ["N", "D"]),
-                (self._pending_points, ["B", "D"]),
-                (mean, ["N", "B", "K"]),
-                (stddev, ["N", "B", "K"]),
-                (cdf, ["N", "B", "K"])
-            ],
-            message="uh-oh-oh"
-        )
-
-        # tf.print(mean)
-        # tf.print(stddev)
-        # tf.print(cdf)
-        # penalty = tf.reduce_prod((1.0 - tf.reduce_prod(1 - cdf, axis=-1)), axis=-1)
-        penalty = tf.reduce_prod(1.0 - tf.reduce_prod(cdf, axis=-1), axis=-1)
+        penalty = tf.reduce_prod(warped_d, axis=-1) # [N,]
 
         return tf.reshape(penalty, (-1, 1))
