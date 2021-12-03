@@ -616,11 +616,10 @@ class mo_penalizer():
         d = tf.norm(standardize_mean_diff, axis=-1) # [N, B]
 
         # warp the distance so that resulting value is from 0 to nearly 1
-        # 2 * (sigmoid(d) - 0.5)
-        warped_d = 2 * (1.0 / (1.0 + tf.exp(-d)) - 0.5) # [N, B]
-        # 1 - 1/(1+d)
+        # warped_d = 2 * (1.0 / (1.0 + tf.exp(-d)) - 0.5) # [N, B]
         # warped_d = 1.0 - 1.0 / (1.0 + d) # [N, B]
-
+        import math
+        warped_d = (2.0/math.pi) * tf.math.atan(d)
         penalty = tf.reduce_prod(warped_d, axis=-1) # [N,]
 
         return tf.reshape(penalty, (-1, 1))
