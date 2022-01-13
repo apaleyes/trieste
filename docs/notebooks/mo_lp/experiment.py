@@ -11,11 +11,12 @@ from trieste.observer import OBJECTIVE
 
 from trieste.acquisition import BatchMonteCarloExpectedHypervolumeImprovement
 from trieste.acquisition.rule import EfficientGlobalOptimization
-from trieste.acquisition.function.local_penalization import MOLocalPenalizationAcquisitionFunction
 from trieste.bayesian_optimizer import BayesianOptimizer
 
 from trieste.acquisition.multi_objective.pareto import Pareto, get_reference_point
 
+
+from mo_lp.mo_penalization import MOLocalPenalizationAcquisitionFunction
 
 def build_stacked_independent_objectives_model(data, n_obj):
     gprs = []
