@@ -5,7 +5,7 @@ import time
 
 from trieste.data import Dataset
 from trieste.models.gpflow import GaussianProcessRegression
-from trieste.models.interfaces import ModelStack
+from trieste.models.interfaces import TrainableModelStack
 from trieste.objectives.utils import mk_observer
 from trieste.observer import OBJECTIVE
 
@@ -30,7 +30,7 @@ def build_stacked_independent_objectives_model(data, n_obj):
         gpflow.utilities.set_trainable(gpr.likelihood, False)
         gprs.append((GaussianProcessRegression(gpr), 1))
 
-    return ModelStack(*gprs)
+    return TrainableModelStack(*gprs)
 
 
 def run_experiment(f, n_obj, search_space, num_initial_points, num_steps, num_query_points):
