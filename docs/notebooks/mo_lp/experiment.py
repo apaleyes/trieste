@@ -10,7 +10,7 @@ from trieste.acquisition.interface import AcquisitionFunction
 
 from trieste.data import Dataset
 from trieste.models.gpflow import GaussianProcessRegression
-from trieste.models.interfaces import TrainableModelStack
+from trieste.models.interfaces import TrainablePredictJointModelStack
 from trieste.objectives.utils import mk_observer
 from trieste.observer import OBJECTIVE
 
@@ -51,7 +51,7 @@ class Config:
         self.acquisition_function = get_acquisition_function(self.acquisition_method_name)
 
     @classmethod
-    def from_dict(args):
+    def from_dict(cls, args):
         config = Config(**args)
         return config
 
@@ -68,7 +68,7 @@ def build_stacked_independent_objectives_model(data, n_obj):
         gpflow.utilities.set_trainable(gpr.likelihood, False)
         gprs.append((GaussianProcessRegression(gpr), 1))
 
-    return TrainableModelStack(*gprs)
+    return TrainablePredictJointModelStack(*gprs)
 
 
 def get_hv_regret(true_points, observed_points, num_initial_points):
@@ -98,7 +98,7 @@ def single_run(config: Config):
         model = build_stacked_independent_objectives_model(initial_data[OBJECTIVE], test_function.n_objectives)
         acq_rule = EfficientGlobalOptimization(config.acquisition_function, num_query_points=config.n_query_points)
 
-        print(f"Running {config.method_name} with batch size {config.n_query_points} for {config.n_optimization_steps} iterations")
+        print(f"Running {config.acquisition_method_name} with batch size {config.n_query_points} for {config.n_optimization_steps} iterations")
         start = time.time()
         result = BayesianOptimizer(observer, test_function.search_space).optimize(config.n_optimization_steps,
                                                                                 initial_data,
