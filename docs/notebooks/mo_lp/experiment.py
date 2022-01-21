@@ -39,7 +39,6 @@ def get_acquisition_function(name):
 class Config:
     acquisition_method_name: str
     test_function_name: str
-    acquisition_function: AcquisitionFunction = field(init=False)
     test_function: Callable = field(init=False)
     n_initial_points: int = 3
     n_query_points: int = 4
@@ -47,8 +46,14 @@ class Config:
     n_repeats: int = 5
 
     def __post_init__(self):
+        # it's ok to create it once as re-use
+        # because test functions are supposed to be stateless
         self.test_function = get_test_function(self.test_function_name)
-        self.acquisition_function = get_acquisition_function(self.acquisition_method_name)
+
+    def create_acquisition_function(self):
+        # acquisition functions cn be stateful
+        # so we need to re-create it each time
+        return get_acquisition_function(self.acquisition_method_name)
 
     @classmethod
     def from_dict(cls, args):
@@ -87,8 +92,8 @@ def get_hv_regret(true_points, observed_points, num_initial_points):
 
 def single_run(config: Config):
     test_function: TestFunction = config.test_function
-    observer = mk_observer(test_function, OBJECTIVE)
     true_pf = read_true_pf(test_function.true_pf_filename)
+    observer = mk_observer(test_function, OBJECTIVE)
 
     hv_regret = []
     for _ in range(config.n_repeats):
@@ -96,7 +101,8 @@ def single_run(config: Config):
         initial_data = observer(initial_query_points)
 
         model = build_stacked_independent_objectives_model(initial_data[OBJECTIVE], test_function.n_objectives)
-        acq_rule = EfficientGlobalOptimization(config.acquisition_function, num_query_points=config.n_query_points)
+        acq_fn = config.create_acquisition_function()
+        acq_rule = EfficientGlobalOptimization(acq_fn, num_query_points=config.n_query_points)
 
         print(f"Running {config.acquisition_method_name} with batch size {config.n_query_points} for {config.n_optimization_steps} iterations")
         start = time.time()
