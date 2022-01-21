@@ -2,18 +2,41 @@ import math
 import tensorflow as tf
 import trieste
 
-from abc import ABC, abstractmethod
+from abc import ABC, abstractclassmethod, abstractmethod
+
+def get_test_function(name: str):
+    if name == Simple1D.name:
+        return Simple1D()
+    elif name == Gardner2D.name:
+        return Gardner2D()
+    elif name == ZDT3.name:
+        return ZDT3()
+    elif name == HartmannAckley6D.name:
+        return HartmannAckley6D()
+    elif name == DTLZ2.name:
+        return DTLZ2()
+    else:
+        raise ValueError(f"Unknown test function {name}")
+
+
+# from https://stackoverflow.com/questions/128573/using-property-on-classmethods
+class classproperty(object):
+    def __init__(self, fget):
+        self.fget = fget
+
+    def __get__(self, owner_self, owner_cls):
+        return self.fget(owner_cls)
+
 
 class TestFunction(ABC):
-    def __init__(self, name, search_space, true_pf_filename, n_objectives=2):
-        self._name = name
+    def __init__(self, search_space, true_pf_filename, n_objectives=2):
         self._search_space = search_space
         self._n_objectives = n_objectives
         self._true_pf_filename = true_pf_filename
 
-    @property
+    @abstractclassmethod
     def name(self):
-        return self._name
+        ...
 
     @property
     def true_pf_filename(self):
@@ -35,12 +58,15 @@ class TestFunction(ABC):
         return self.f(x)
 
 
-
 class Simple1D(TestFunction):
     """Simple 1d input space case
     """
     def __init__(self):
-        super().__init__("Simple 1D", trieste.space.Box([0], [2*math.pi]), "simple_1d_input.csv")
+        super().__init__(trieste.space.Box([0], [2*math.pi]), "simple_1d_input.csv")
+
+    @classproperty
+    def name(self):
+        return "Simple 1D"
 
     def f1(self, x):
         return tf.cos(2 * x) + tf.sin(x)
@@ -57,7 +83,11 @@ class Gardner2D(TestFunction):
     """2d input case from Gardner et al. 2014
     """
     def __init__(self):
-        super().__init__("Gardner 2D", trieste.space.Box([0, 0], [2*math.pi, 2*math.pi]), "gardner_2d_input.csv")
+        super().__init__(trieste.space.Box([0, 0], [2*math.pi, 2*math.pi]), "gardner_2d_input.csv")
+
+    @classproperty
+    def name(self):
+        return "Gardner 2D"
 
     def f1(self, input_data):
         x, y = input_data[..., -2], input_data[..., -1]
@@ -79,7 +109,11 @@ class ZDT3(TestFunction):
     """ZDT3 - 6d input, discontinuous front
     """
     def __init__(self):
-        super().__init__("ZDT3", trieste.space.Box([0, 0], [1, 1]), "zdt3_2d_input.csv")
+        super().__init__(trieste.space.Box([0, 0], [1, 1]), "zdt3_2d_input.csv")
+
+    @classproperty
+    def name(self):
+        return "ZDT3"
 
     def f1(self, x):
         return tf.reshape(x[:, 0], (-1, 1))
@@ -108,7 +142,11 @@ class HartmannAckley6D(TestFunction):
     """Hartmann-Ackley in 6d input
     """
     def __init__(self):
-        super().__init__("Hartmann-Ackley", trieste.space.Box([0]*6, [1]*6), "hartmann_ackley_6d_input.csv")
+        super().__init__(trieste.space.Box([0]*6, [1]*6), "hartmann_ackley_6d_input.csv")
+
+    @classproperty
+    def name(self):
+        return "Hartmann-Ackley"
 
     def f(self, x):
         return tf.concat([hartmann_6(x), ackley_6(x)], axis=-1)
@@ -119,7 +157,11 @@ class DTLZ2(TestFunction):
     """DTLZ 2 - 3 objectives, 4d input
     """
     def __init__(self):
-        super().__init__("DTLZ 2", trieste.space.Box([0]*4, [1]*4), "dtlz2_4d_input.csv", n_objectives=3)
+        super().__init__(trieste.space.Box([0]*4, [1]*4), "dtlz2_4d_input.csv", n_objectives=3)
+
+    @classproperty
+    def name(self):
+        return "DTLZ 2"
 
     def g(self, x): 
         return tf.pow(x[:, 2] - 0.5, 2) + tf.pow(x[:, 3] - 0.5, 2)
