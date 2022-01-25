@@ -3,6 +3,7 @@ import tensorflow as tf
 import gpflow
 import numpy as np
 import time
+import pathlib
 from dataclasses import dataclass, field
 
 
@@ -21,9 +22,9 @@ from trieste.bayesian_optimizer import BayesianOptimizer
 from trieste.acquisition.multi_objective.pareto import Pareto, get_reference_point
 
 
-from mo_lp.test_functions import TestFunction, get_test_function
-from mo_lp.generate_true_pareto_fronts import read_true_pf
-from mo_lp.mo_penalization import MOLocalPenalizationAcquisitionFunction
+from test_functions import TestFunction, get_test_function
+from generate_true_pareto_fronts import read_true_pf
+from mo_penalization import MOLocalPenalizationAcquisitionFunction
 
 
 def get_acquisition_function(name):
@@ -44,6 +45,7 @@ class Config:
     n_query_points: int = 4
     n_optimization_steps: int = 3
     n_repeats: int = 5
+    seed: int = None
 
     def __post_init__(self):
         # it's ok to create it once as re-use
@@ -54,6 +56,15 @@ class Config:
         # acquisition functions cn be stateful
         # so we need to re-create it each time
         return get_acquisition_function(self.acquisition_method_name)
+
+    def get_filename(self):
+        return f"{self.acquisition_method_name}_" \
+               f"{self.test_function_name}_" \
+               f"n_initial_points_{self.n_initial_points}_" \
+               f"n_query_points_{self.n_query_points}_" \
+               f"n_optimization_steps_{self.n_optimization_steps}_" \
+               f"n_repeats_{self.n_repeats}_" \
+               f"seed_{self.seed}"
 
     @classmethod
     def from_dict(cls, args):
@@ -90,13 +101,20 @@ def get_hv_regret(true_points, observed_points, num_initial_points):
     return hv_regret
 
 
-def single_run(config: Config):
+def single_run(config: Config, save_to_file=False):
+    print(f"Running {config.acquisition_method_name} on {config.test_function_name}")
+
+    if config.seed is not None:
+        np.random.seed(config.seed)
+        tf.random.set_seed(config.seed)
+
     test_function: TestFunction = config.test_function
     true_pf = read_true_pf(test_function.true_pf_filename)
     observer = mk_observer(test_function, OBJECTIVE)
 
     hv_regret = []
-    for _ in range(config.n_repeats):
+    for i in range(config.n_repeats):
+        print(f"Repeat #{i}")
         initial_query_points = test_function.search_space.sample(config.n_initial_points)
         initial_data = observer(initial_query_points)
 
@@ -104,7 +122,6 @@ def single_run(config: Config):
         acq_fn = config.create_acquisition_function()
         acq_rule = EfficientGlobalOptimization(acq_fn, num_query_points=config.n_query_points)
 
-        print(f"Running {config.acquisition_method_name} with batch size {config.n_query_points} for {config.n_optimization_steps} iterations")
         start = time.time()
         result = BayesianOptimizer(observer, test_function.search_space).optimize(config.n_optimization_steps,
                                                                                 initial_data,
@@ -115,48 +132,12 @@ def single_run(config: Config):
 
         dataset = result.try_get_final_datasets()[OBJECTIVE]
         hv_regret.append(get_hv_regret(true_pf, dataset.observations, config.n_initial_points))
-    
+
+    if save_to_file:
+        current_dir = pathlib.Path(__file__).parent
+        file_path = current_dir.joinpath("results", config.get_filename()).resolve()
+        np.savetxt(str(file_path), hv_regret, delimiter=",")
+        print(f"Saved results to {file_path}")
+
     return hv_regret
-
-
-# def run_experiment(f, n_obj, search_space, num_initial_points, num_steps, num_query_points):
-#     observer = mk_observer(f, OBJECTIVE)
-
-#     initial_query_points = search_space.sample(num_initial_points)
-#     initial_data = observer(initial_query_points)
-
-#     print(f"Running Batch MC with batch size {num_query_points} for {num_steps} iterations")
-#     model = build_stacked_independent_objectives_model(initial_data[OBJECTIVE], n_obj)
-#     acq_function = BatchMonteCarloExpectedHypervolumeImprovement(sample_size=250).using(OBJECTIVE)
-#     acq_rule = EfficientGlobalOptimization(acq_function, num_query_points=num_query_points)
-
-#     start = time.time()
-#     result = BayesianOptimizer(observer, search_space).optimize(num_steps, initial_data, {OBJECTIVE: model}, acq_rule)
-#     stop = time.time()
-
-#     batch_mc_dataset = result.try_get_final_datasets()[OBJECTIVE]
-#     print(f"Batch MC finished in {stop - start}s")
-
-#     print(f"Running MO LP with batch size {num_query_points} for {num_steps} iterations")
-#     model = build_stacked_independent_objectives_model(initial_data[OBJECTIVE], n_obj)
-#     acq_function = MOLocalPenalizationAcquisitionFunction().using(OBJECTIVE)
-#     acq_rule = EfficientGlobalOptimization(acq_function, num_query_points=num_query_points)
-    
-#     start = time.time()
-#     result = BayesianOptimizer(observer, search_space).optimize(num_steps, initial_data, {OBJECTIVE: model}, acq_rule)
-#     stop = time.time()
-
-#     mo_lp_dataset = result.try_get_final_datasets()[OBJECTIVE]
-#     print(f"MO LP finished in {stop - start}s")
-
-
-#     return batch_mc_dataset.observations, mo_lp_dataset.observations
-
-
-
-
-
-
-
-
 

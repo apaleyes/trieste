@@ -5,7 +5,7 @@ from pymoo.core.problem import Problem
 from pymoo.optimize import minimize
 from pymoo.algorithms.moo.nsga2 import NSGA2
 
-from . import test_functions
+import test_functions
 
 
 class PymooProblem(Problem):
