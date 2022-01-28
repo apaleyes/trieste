@@ -11,12 +11,16 @@ def simple_1d():
     }
 
 
-    config_dict["acquisition_method_name"] = "BatchMC"
-    config = Config.from_dict(config_dict)
-    single_run(config, save_to_file=True)
+    # config_dict["acquisition_method_name"] = "BatchMC"
+    # config = Config.from_dict(config_dict)
+    # single_run(config, save_to_file=True)
 
 
-    config_dict["acquisition_method_name"] = "DistanceBased"
+    # config_dict["acquisition_method_name"] = "DistanceBased"
+    # config = Config.from_dict(config_dict)
+    # single_run(config, save_to_file=True)
+
+    config_dict["acquisition_method_name"] = "KB"
     config = Config.from_dict(config_dict)
     single_run(config, save_to_file=True)
 
@@ -31,12 +35,16 @@ def gardner():
     }
 
 
-    config_dict["acquisition_method_name"] = "BatchMC"
-    config = Config.from_dict(config_dict)
-    single_run(config, save_to_file=True)
+    # config_dict["acquisition_method_name"] = "BatchMC"
+    # config = Config.from_dict(config_dict)
+    # single_run(config, save_to_file=True)
 
 
-    config_dict["acquisition_method_name"] = "DistanceBased"
+    # config_dict["acquisition_method_name"] = "DistanceBased"
+    # config = Config.from_dict(config_dict)
+    # single_run(config, save_to_file=True)
+
+    config_dict["acquisition_method_name"] = "KB"
     config = Config.from_dict(config_dict)
     single_run(config, save_to_file=True)
 
@@ -51,12 +59,15 @@ def hartmann_ackley():
     }
 
 
-    config_dict["acquisition_method_name"] = "BatchMC"
-    config = Config.from_dict(config_dict)
-    single_run(config, save_to_file=True)
+    # config_dict["acquisition_method_name"] = "BatchMC"
+    # config = Config.from_dict(config_dict)
+    # single_run(config, save_to_file=True)
 
+    # config_dict["acquisition_method_name"] = "DistanceBased"
+    # config = Config.from_dict(config_dict)
+    # single_run(config, save_to_file=True)
 
-    config_dict["acquisition_method_name"] = "DistanceBased"
+    config_dict["acquisition_method_name"] = "KB"
     config = Config.from_dict(config_dict)
     single_run(config, save_to_file=True)
 
@@ -70,13 +81,15 @@ def zdt3():
         "n_repeats": 10
     }
 
+    # config_dict["acquisition_method_name"] = "BatchMC"
+    # config = Config.from_dict(config_dict)
+    # single_run(config, save_to_file=True)
 
-    config_dict["acquisition_method_name"] = "BatchMC"
-    config = Config.from_dict(config_dict)
-    single_run(config, save_to_file=True)
+    # config_dict["acquisition_method_name"] = "DistanceBased"
+    # config = Config.from_dict(config_dict)
+    # single_run(config, save_to_file=True)
 
-
-    config_dict["acquisition_method_name"] = "DistanceBased"
+    config_dict["acquisition_method_name"] = "KB"
     config = Config.from_dict(config_dict)
     single_run(config, save_to_file=True)
 
@@ -92,19 +105,22 @@ def DTLZ2_3_objectives():
     }
 
 
-    config_dict["acquisition_method_name"] = "BatchMC"
-    config = Config.from_dict(config_dict)
-    single_run(config, save_to_file=True)
-
+    # config_dict["acquisition_method_name"] = "BatchMC"
+    # config = Config.from_dict(config_dict)
+    # single_run(config, save_to_file=True)
 
     # config_dict["acquisition_method_name"] = "DistanceBased"
     # config = Config.from_dict(config_dict)
     # single_run(config, save_to_file=True)
 
+    config_dict["acquisition_method_name"] = "KB"
+    config = Config.from_dict(config_dict)
+    single_run(config, save_to_file=True)
+
 
 if __name__ == '__main__':
-    # simple_1d()
-    # gardner()
-    # hartmann_ackley()
-    # zdt3()
+    simple_1d()
+    gardner()
+    hartmann_ackley()
+    zdt3()
     DTLZ2_3_objectives()

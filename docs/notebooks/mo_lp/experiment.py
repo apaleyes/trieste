@@ -15,7 +15,7 @@ from trieste.models.interfaces import TrainablePredictJointReparamModelStack
 from trieste.objectives.utils import mk_observer
 from trieste.observer import OBJECTIVE
 
-from trieste.acquisition import BatchMonteCarloExpectedHypervolumeImprovement
+from trieste.acquisition import BatchMonteCarloExpectedHypervolumeImprovement, Fantasizer, ExpectedHypervolumeImprovement
 from trieste.acquisition.rule import EfficientGlobalOptimization
 from trieste.bayesian_optimizer import BayesianOptimizer
 
@@ -32,6 +32,8 @@ def get_acquisition_function(name):
         return BatchMonteCarloExpectedHypervolumeImprovement(sample_size=100).using(OBJECTIVE)
     elif name == "DistanceBased":
         return MOLocalPenalizationAcquisitionFunction().using(OBJECTIVE)
+    elif name == "KB":
+        return Fantasizer(ExpectedHypervolumeImprovement())
     else:
         raise ValueError(f"Unknown method {name}")
 
