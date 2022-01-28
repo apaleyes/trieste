@@ -11,7 +11,7 @@ from trieste.acquisition.interface import AcquisitionFunction
 
 from trieste.data import Dataset
 from trieste.models.gpflow import GaussianProcessRegression
-from trieste.models.interfaces import TrainablePredictJointModelStack
+from trieste.models.interfaces import TrainablePredictJointReparamModelStack
 from trieste.objectives.utils import mk_observer
 from trieste.observer import OBJECTIVE
 
@@ -29,7 +29,7 @@ from mo_penalization import MOLocalPenalizationAcquisitionFunction
 
 def get_acquisition_function(name):
     if name == "BatchMC":
-        return BatchMonteCarloExpectedHypervolumeImprovement(sample_size=250).using(OBJECTIVE)
+        return BatchMonteCarloExpectedHypervolumeImprovement(sample_size=100).using(OBJECTIVE)
     elif name == "DistanceBased":
         return MOLocalPenalizationAcquisitionFunction().using(OBJECTIVE)
     else:
@@ -84,7 +84,7 @@ def build_stacked_independent_objectives_model(data, n_obj):
         gpflow.utilities.set_trainable(gpr.likelihood, False)
         gprs.append((GaussianProcessRegression(gpr), 1))
 
-    return TrainablePredictJointModelStack(*gprs)
+    return TrainablePredictJointReparamModelStack(*gprs)
 
 
 def get_hv_regret(true_points, observed_points, num_initial_points):

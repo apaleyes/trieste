@@ -66,7 +66,7 @@ class Simple1D(TestFunction):
 
     @classproperty
     def name(self):
-        return "Simple 1D"
+        return "Simple1D"
 
     def f1(self, x):
         return tf.cos(2 * x) + tf.sin(x)
@@ -87,7 +87,7 @@ class Gardner2D(TestFunction):
 
     @classproperty
     def name(self):
-        return "Gardner 2D"
+        return "Gardner2D"
 
     def f1(self, input_data):
         x, y = input_data[..., -2], input_data[..., -1]
@@ -161,7 +161,7 @@ class DTLZ2(TestFunction):
 
     @classproperty
     def name(self):
-        return "DTLZ 2"
+        return "DTLZ2"
 
     def g(self, x): 
         return tf.pow(x[:, 2] - 0.5, 2) + tf.pow(x[:, 3] - 0.5, 2)
