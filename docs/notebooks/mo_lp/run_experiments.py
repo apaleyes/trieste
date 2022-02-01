@@ -10,15 +10,13 @@ def simple_1d():
         "n_repeats": 10
     }
 
+    config_dict["acquisition_method_name"] = "BatchMC"
+    config = Config.from_dict(config_dict)
+    single_run(config, save_to_file=True)
 
-    # config_dict["acquisition_method_name"] = "BatchMC"
-    # config = Config.from_dict(config_dict)
-    # single_run(config, save_to_file=True)
-
-
-    # config_dict["acquisition_method_name"] = "DistanceBased"
-    # config = Config.from_dict(config_dict)
-    # single_run(config, save_to_file=True)
+    config_dict["acquisition_method_name"] = "DistanceBased"
+    config = Config.from_dict(config_dict)
+    single_run(config, save_to_file=True)
 
     config_dict["acquisition_method_name"] = "KB"
     config = Config.from_dict(config_dict)
@@ -30,19 +28,17 @@ def gardner():
         "test_function_name": test_functions.Gardner2D.name,
         "n_initial_points": 3,
         "n_query_points": 4,
-        "n_optimization_steps": 3,
+        "n_optimization_steps": 7,
         "n_repeats": 10
     }
 
+    config_dict["acquisition_method_name"] = "BatchMC"
+    config = Config.from_dict(config_dict)
+    single_run(config, save_to_file=True)
 
-    # config_dict["acquisition_method_name"] = "BatchMC"
-    # config = Config.from_dict(config_dict)
-    # single_run(config, save_to_file=True)
-
-
-    # config_dict["acquisition_method_name"] = "DistanceBased"
-    # config = Config.from_dict(config_dict)
-    # single_run(config, save_to_file=True)
+    config_dict["acquisition_method_name"] = "DistanceBased"
+    config = Config.from_dict(config_dict)
+    single_run(config, save_to_file=True)
 
     config_dict["acquisition_method_name"] = "KB"
     config = Config.from_dict(config_dict)
@@ -54,20 +50,22 @@ def hartmann_ackley():
         "test_function_name": test_functions.HartmannAckley6D.name,
         "n_initial_points": 3,
         "n_query_points": 4,
-        "n_optimization_steps": 5,
+        "n_optimization_steps": 20,
         "n_repeats": 10
     }
 
+    config_dict["acquisition_method_name"] = "BatchMC"
+    config_dict["n_optimization_steps"] = 15 # BatchMC really struggles with 20 iterations
+    config = Config.from_dict(config_dict)
+    single_run(config, save_to_file=True)
 
-    # config_dict["acquisition_method_name"] = "BatchMC"
-    # config = Config.from_dict(config_dict)
-    # single_run(config, save_to_file=True)
-
-    # config_dict["acquisition_method_name"] = "DistanceBased"
-    # config = Config.from_dict(config_dict)
-    # single_run(config, save_to_file=True)
+    config_dict["acquisition_method_name"] = "DistanceBased"
+    config_dict["n_optimization_steps"] = 20
+    config = Config.from_dict(config_dict)
+    single_run(config, save_to_file=True)
 
     config_dict["acquisition_method_name"] = "KB"
+    config_dict["n_optimization_steps"] = 20
     config = Config.from_dict(config_dict)
     single_run(config, save_to_file=True)
 
@@ -81,13 +79,13 @@ def zdt3():
         "n_repeats": 10
     }
 
-    # config_dict["acquisition_method_name"] = "BatchMC"
-    # config = Config.from_dict(config_dict)
-    # single_run(config, save_to_file=True)
+    config_dict["acquisition_method_name"] = "BatchMC"
+    config = Config.from_dict(config_dict)
+    single_run(config, save_to_file=True)
 
-    # config_dict["acquisition_method_name"] = "DistanceBased"
-    # config = Config.from_dict(config_dict)
-    # single_run(config, save_to_file=True)
+    config_dict["acquisition_method_name"] = "DistanceBased"
+    config = Config.from_dict(config_dict)
+    single_run(config, save_to_file=True)
 
     config_dict["acquisition_method_name"] = "KB"
     config = Config.from_dict(config_dict)
@@ -100,18 +98,17 @@ def DTLZ2_3_objectives():
         "test_function_name": test_functions.DTLZ2.name,
         "n_initial_points": 3,
         "n_query_points": 4,
-        "n_optimization_steps": 5,
+        "n_optimization_steps": 10,
         "n_repeats": 10
     }
-
 
     # config_dict["acquisition_method_name"] = "BatchMC"
     # config = Config.from_dict(config_dict)
     # single_run(config, save_to_file=True)
 
-    # config_dict["acquisition_method_name"] = "DistanceBased"
-    # config = Config.from_dict(config_dict)
-    # single_run(config, save_to_file=True)
+    config_dict["acquisition_method_name"] = "DistanceBased"
+    config = Config.from_dict(config_dict)
+    single_run(config, save_to_file=True)
 
     config_dict["acquisition_method_name"] = "KB"
     config = Config.from_dict(config_dict)

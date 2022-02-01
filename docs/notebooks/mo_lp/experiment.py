@@ -115,31 +115,49 @@ def single_run(config: Config, save_to_file=False):
     observer = mk_observer(test_function, OBJECTIVE)
 
     hv_regret = []
-    for i in range(config.n_repeats):
-        print(f"Repeat #{i}")
-        initial_query_points = test_function.search_space.sample(config.n_initial_points)
-        initial_data = observer(initial_query_points)
+    i = 0
+    times = []
+    while i < config.n_repeats:
+        try:
+            print(f"Repeat #{i}")
+            initial_query_points = test_function.search_space.sample(config.n_initial_points)
+            initial_data = observer(initial_query_points)
 
-        model = build_stacked_independent_objectives_model(initial_data[OBJECTIVE], test_function.n_objectives)
-        acq_fn = config.create_acquisition_function()
-        acq_rule = EfficientGlobalOptimization(acq_fn, num_query_points=config.n_query_points)
+            model = build_stacked_independent_objectives_model(initial_data[OBJECTIVE], test_function.n_objectives)
+            acq_fn = config.create_acquisition_function()
+            acq_rule = EfficientGlobalOptimization(acq_fn, num_query_points=config.n_query_points)
 
-        start = time.time()
-        result = BayesianOptimizer(observer, test_function.search_space).optimize(config.n_optimization_steps,
-                                                                                initial_data,
-                                                                                {OBJECTIVE: model},
-                                                                                acq_rule)
-        stop = time.time()
-        print(f"Finished in {stop - start}s")
+            start = time.time()
+            result = BayesianOptimizer(observer, test_function.search_space).optimize(config.n_optimization_steps,
+                                                                                    initial_data,
+                                                                                    {OBJECTIVE: model},
+                                                                                    acq_rule)
+            stop = time.time()
+            print(f"Finished in {stop - start}s")
 
-        dataset = result.try_get_final_datasets()[OBJECTIVE]
-        hv_regret.append(get_hv_regret(true_pf, dataset.observations, config.n_initial_points))
+            dataset = result.try_get_final_datasets()[OBJECTIVE]
+            hv_regret.append(get_hv_regret(true_pf, dataset.observations, config.n_initial_points))
+            times.append(stop-start)
+            i += 1
+        except Exception as e:
+            # this is really lazy
+            # above code seems to work almost always
+            # but occasionally may fail with Cholesky errors
+            # this exception isn't fatal, and usually works fine upon restart
+            # but since i can't remember the exact type of exception
+            # let's just catch them all for now
+            print(f"Failed with error: {e}")
+            continue
 
     if save_to_file:
         current_dir = pathlib.Path(__file__).parent
         file_path = current_dir.joinpath("results", config.get_filename()).resolve()
         np.savetxt(str(file_path), hv_regret, delimiter=",")
         print(f"Saved results to {file_path}")
+
+        times_file_path = current_dir.joinpath("results", config.get_filename() + "_time").resolve()
+        np.savetxt(str(times_file_path), times, delimiter=",")
+        print(f"Saved times to {times_file_path}")
 
     return hv_regret
 
