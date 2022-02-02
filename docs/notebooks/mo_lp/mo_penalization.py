@@ -265,7 +265,7 @@ class mo_penalizer():
         pending_means_expanded = self._pending_means[None, :, :]
         pending_vars_expanded = self._pending_vars[None, :, :]
         pending_stddevs_expanded = tf.sqrt(pending_vars_expanded)
-        standardize_mean_diff = (x_means_expanded - pending_means_expanded) / pending_stddevs_expanded # [N, B, K]
+        standardize_mean_diff = tf.abs(x_means_expanded - pending_means_expanded) / pending_stddevs_expanded # [N, B, K]
 
         d = tf.norm(standardize_mean_diff, axis=-1) # [N, B]
 
