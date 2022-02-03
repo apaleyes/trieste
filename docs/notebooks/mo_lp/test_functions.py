@@ -206,3 +206,19 @@ class DTLZ2(TestFunction):
 
     def f(self, x):
         return tf.concat([self.f1(x), self.f2(x), self.f3(x)], axis=-1)
+
+
+from trieste.objectives.multi_objectives import vlmop2
+
+class VLMOP2(TestFunction):
+    """VLMOP2, 2d input and output
+    """
+    def __init__(self):
+        super().__init__(trieste.space.Box([-2]*2, [2]*2), "vlmop2.csv")
+
+    @classproperty
+    def name(self):
+        return "VLMOP2"
+
+    def f(self, x):
+        return vlmop2(x)
