@@ -55,4 +55,5 @@ if __name__ == "__main__":
     generate_true_pareto_front(test_functions.Gardner2D())
     generate_true_pareto_front(test_functions.ZDT3())
     generate_true_pareto_front(test_functions.HartmannAckley6D())
+    generate_true_pareto_front(test_functions.ScaledHartmannAckley6D())
     generate_true_pareto_front(test_functions.DTLZ2())

@@ -13,6 +13,8 @@ def get_test_function(name: str):
         return ZDT3()
     elif name == HartmannAckley6D.name:
         return HartmannAckley6D()
+    elif name == ScaledHartmannAckley6D.name:
+        return ScaledHartmannAckley6D()
     elif name == DTLZ2.name:
         return DTLZ2()
     else:
@@ -139,7 +141,7 @@ def ackley_6(x):
     return ackley_5(x_5d)
 
 class HartmannAckley6D(TestFunction):
-    """Hartmann-Ackley in 6d input
+    """Hartmann-Ackley with 6d input
     """
     def __init__(self):
         super().__init__(trieste.space.Box([0]*6, [1]*6), "hartmann_ackley_6d_input.csv")
@@ -151,6 +153,30 @@ class HartmannAckley6D(TestFunction):
     def f(self, x):
         return tf.concat([hartmann_6(x), ackley_6(x)], axis=-1)
 
+class ScaledHartmannAckley6D(TestFunction):
+    """Hartmann-Ackley with 6D input, output scaled to [0,1]
+    """
+    def __init__(self):
+        super().__init__(trieste.space.Box([0]*6, [1]*6), "scaled_hartmann_ackley_6d_input.csv")
+
+    @classproperty
+    def name(self):
+        return "Hartmann-Ackley-Scaled"
+
+    def scale(self, y):
+        hartmann_min = -3.3
+        hartmann_max = 0.0
+        ackley_min = 0.0
+        ackley_max = 23
+
+        y1 = (y[: ,0] - hartmann_min)/(hartmann_max - hartmann_min)
+        y2 = (y[: ,1] - ackley_min)/(ackley_max - ackley_min)
+
+        return tf.stack([y1, y2], axis=-1)
+
+    def f(self, x):
+        y = tf.concat([hartmann_6(x), ackley_6(x)], axis=-1)
+        return self.scale(y)
 
 
 class DTLZ2(TestFunction):

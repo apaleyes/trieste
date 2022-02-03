@@ -47,17 +47,17 @@ def gardner():
 
 def hartmann_ackley():
     config_dict = {
-        "test_function_name": test_functions.HartmannAckley6D.name,
-        "n_initial_points": 3,
+        "test_function_name": test_functions.ScaledHartmannAckley6D.name,
+        "n_initial_points": 6,
         "n_query_points": 4,
         "n_optimization_steps": 20,
         "n_repeats": 10
     }
 
-    config_dict["acquisition_method_name"] = "BatchMC"
-    config_dict["n_optimization_steps"] = 15 # BatchMC really struggles with 20 iterations
-    config = Config.from_dict(config_dict)
-    single_run(config, save_to_file=True)
+    # config_dict["acquisition_method_name"] = "BatchMC"
+    # config_dict["n_optimization_steps"] = 15 # BatchMC really struggles
+    # config = Config.from_dict(config_dict)
+    # single_run(config, save_to_file=True)
 
     config_dict["acquisition_method_name"] = "DistanceBased"
     config_dict["n_optimization_steps"] = 20
@@ -116,8 +116,8 @@ def DTLZ2_3_objectives():
 
 
 if __name__ == '__main__':
-    simple_1d()
-    gardner()
+    # simple_1d()
+    # gardner()
     hartmann_ackley()
-    zdt3()
-    DTLZ2_3_objectives()
+    # zdt3()
+    # DTLZ2_3_objectives()
