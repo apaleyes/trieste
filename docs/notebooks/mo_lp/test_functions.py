@@ -17,6 +17,10 @@ def get_test_function(name: str):
         return ScaledHartmannAckley6D()
     elif name == DTLZ2.name:
         return DTLZ2()
+    elif name == VLMOP2.name:
+        return VLMOP2()
+    elif name == BraninGoldsteinPrice.name:
+        return BraninGoldsteinPrice()
     else:
         raise ValueError(f"Unknown test function {name}")
 
@@ -222,3 +226,19 @@ class VLMOP2(TestFunction):
 
     def f(self, x):
         return vlmop2(x)
+
+
+from trieste.objectives.single_objectives import scaled_branin, logarithmic_goldstein_price
+
+class BraninGoldsteinPrice(TestFunction):
+    """Branin vs Logarithmic Goldstein-Price, 2d input and output
+    """
+    def __init__(self):
+        super().__init__(trieste.space.Box([0]*2, [1]*2), "branin_goldstein_price.csv")
+
+    @classproperty
+    def name(self):
+        return "BraninGoldsteinPrice"
+
+    def f(self, x):
+        return tf.concat([scaled_branin(x), logarithmic_goldstein_price(x)], axis=-1)

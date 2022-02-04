@@ -57,4 +57,5 @@ if __name__ == "__main__":
     # generate_true_pareto_front(test_functions.HartmannAckley6D())
     # generate_true_pareto_front(test_functions.ScaledHartmannAckley6D())
     # generate_true_pareto_front(test_functions.DTLZ2())
-    generate_true_pareto_front(test_functions.VLMOP2())
+    # generate_true_pareto_front(test_functions.VLMOP2())
+    generate_true_pareto_front(test_functions.BraninGoldsteinPrice())
