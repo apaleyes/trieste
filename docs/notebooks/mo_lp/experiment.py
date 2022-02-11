@@ -7,7 +7,6 @@ import pathlib
 from dataclasses import dataclass, field
 
 
-from trieste.acquisition.interface import AcquisitionFunction
 
 from trieste.data import Dataset
 from trieste.models.gpflow import GaussianProcessRegression
@@ -18,6 +17,7 @@ from trieste.observer import OBJECTIVE
 from trieste.acquisition import BatchMonteCarloExpectedHypervolumeImprovement, Fantasizer, ExpectedHypervolumeImprovement
 from trieste.acquisition.rule import EfficientGlobalOptimization
 from trieste.bayesian_optimizer import BayesianOptimizer
+from trieste.ask_tell_optimization import AskTellOptimizer
 
 from trieste.acquisition.multi_objective.pareto import Pareto, get_reference_point
 
@@ -127,17 +127,29 @@ def single_run(config: Config, save_to_file=False):
             acq_fn = config.create_acquisition_function()
             acq_rule = EfficientGlobalOptimization(acq_fn, num_query_points=config.n_query_points)
 
-            start = time.time()
-            result = BayesianOptimizer(observer, test_function.search_space).optimize(config.n_optimization_steps,
-                                                                                    initial_data,
-                                                                                    {OBJECTIVE: model},
-                                                                                    acq_rule)
-            stop = time.time()
-            print(f"Finished in {stop - start}s")
+            ask_tell = AskTellOptimizer(test_function.search_space, initial_data, {OBJECTIVE: model}, acq_rule)
+
+            repeat_times = []
+            for step in range(config.n_optimization_steps):
+                start = time.time()
+                new_point = ask_tell.ask()
+                new_data = observer(new_point)
+                ask_tell.tell(new_data)
+                stop = time.time()
+                repeat_times.append(stop-start)
+            result = ask_tell.to_result()
+
+            # start = time.time()
+            # result = BayesianOptimizer(observer, test_function.search_space).optimize(config.n_optimization_steps,
+            #                                                                         initial_data,
+            #                                                                         {OBJECTIVE: model},
+            #                                                                         acq_rule)
+            # stop = time.time()
+            print(f"Finished in {sum(repeat_times):.2f}s")
 
             dataset = result.try_get_final_datasets()[OBJECTIVE]
             hv_regret.append(get_hv_regret(true_pf, dataset.observations, config.n_initial_points))
-            times.append(stop-start)
+            times.append(repeat_times)
             i += 1
         except Exception as e:
             # this is really lazy
@@ -148,6 +160,7 @@ def single_run(config: Config, save_to_file=False):
             # let's just catch them all for now
             print(f"Failed with error: {e}")
             continue
+            # raise
 
     if save_to_file:
         current_dir = pathlib.Path(__file__).parent
