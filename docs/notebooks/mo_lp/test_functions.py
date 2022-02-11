@@ -21,6 +21,8 @@ def get_test_function(name: str):
         return VLMOP2()
     elif name == BraninGoldsteinPrice.name:
         return BraninGoldsteinPrice()
+    elif name == RosenbrockAlpine2.name:
+        return RosenbrockAlpine2()
     else:
         raise ValueError(f"Unknown test function {name}")
 
@@ -242,3 +244,24 @@ class BraninGoldsteinPrice(TestFunction):
 
     def f(self, x):
         return tf.concat([scaled_branin(x), logarithmic_goldstein_price(x)], axis=-1)
+
+
+from trieste.objectives.single_objectives import rosenbrock_4
+
+def alpine2_4(x):
+    tf.debugging.assert_shapes([(x, (..., 4))])
+    result = tf.reduce_prod(tf.sqrt(x) * tf.sin(x), axis=1, keepdims=True)
+    return result
+
+class RosenbrockAlpine2(TestFunction):
+    """Rosenbrok vs Alpine2, 4d input and 2d output
+    """
+    def __init__(self):
+        super().__init__(trieste.space.Box([0]*4, [1]*4), "rosenbrock_alpine2.csv")
+
+    @classproperty
+    def name(self):
+        return "RosenbrockAlpine2"
+
+    def f(self, x):
+        return tf.concat([rosenbrock_4(x), alpine2_4(x)], axis=-1)
