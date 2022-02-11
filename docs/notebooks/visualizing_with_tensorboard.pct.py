@@ -9,7 +9,7 @@ np.random.seed(1793)
 tf.random.set_seed(1793)
 
 # %% [markdown]
-# We often wish to track or visualize the Bayesian optimization process, either during and following execution. This tutorial shows how to do this using the [TensorBoard](https://www.tensorflow.org/tensorboard) visualization toolkit.
+# We often wish to track or visualize the Bayesian optimization process, either during and following execution. This tutorial shows how to do this using the [TensorBoard](https://www.tensorflow.org/tensorboard) visualization toolkit. By default we keep track of evolution of the found minimizer and report timings for key parts of each optimization step.
 
 # %% [markdown]
 # ## Set up the problem
@@ -42,10 +42,10 @@ summary_writer = tf.summary.create_file_writer("logs/tensorboard/experiment1")
 trieste.logging.set_tensorboard_writer(summary_writer)
 
 # %% [markdown]
-# We can now also load the TensorBoard extension, though at this point there will not be any data to dispay.
+# We can now also load the TensorBoard extension, though at this point there will not be any data to dispay. To run this notebook locally, remove the %%script line.
 
 # %% magic_args="echo Loading TensorBoard..." language="script"
-#
+
 # %load_ext tensorboard
 # %tensorboard --logdir "logs/tensorboard"
 
@@ -104,7 +104,7 @@ result, history = bo.optimize(num_steps, initial_data, model).astuple()
 # ![TensorBoard custom graphs](figures/tensorboard_custom.png)
 
 # %% [markdown]
-# ## Logging additional acqusition rule metrics
+# ## Logging additional acquisition rule metrics
 #
 #
 # Similarly, it is possible to log additional metrics connected to the acquisition rule by overriding rule's `acquire` method (or any other method used while evaluating the rule). For example, the following class also logs the mean coordinates of the selected points:
