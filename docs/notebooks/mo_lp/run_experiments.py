@@ -54,10 +54,10 @@ def hartmann_ackley():
         "n_repeats": 10
     }
 
-    # config_dict["acquisition_method_name"] = "BatchMC"
-    # config_dict["n_optimization_steps"] = 15 # BatchMC really struggles
-    # config = Config.from_dict(config_dict)
-    # single_run(config, save_to_file=True)
+    config_dict["acquisition_method_name"] = "BatchMC"
+    config_dict["n_optimization_steps"] = 15 # BatchMC really struggles
+    config = Config.from_dict(config_dict)
+    single_run(config, save_to_file=True)
 
     config_dict["acquisition_method_name"] = "DistanceBased"
     config_dict["n_optimization_steps"] = 20
@@ -184,9 +184,9 @@ def RosenbrokAlpine2():
 if __name__ == '__main__':
     # simple_1d()
     # gardner()
-    hartmann_ackley()
-    zdt3()
-    DTLZ2_3_objectives()
-    VLMOP2()
-    BraninGoldsteinPrice()
+    # hartmann_ackley()
+    # zdt3()
+    # DTLZ2_3_objectives()
+    # VLMOP2()
+    # BraninGoldsteinPrice()
     RosenbrokAlpine2()
