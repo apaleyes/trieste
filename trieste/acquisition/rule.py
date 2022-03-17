@@ -25,9 +25,8 @@ from typing import Generic, Optional, TypeVar, Union, cast, overload
 
 import tensorflow as tf
 
-from .. import types
+from .. import logging, types
 from ..data import Dataset
-from ..logging import get_step_number, get_tensorboard_writer
 from ..models import ProbabilisticModel
 from ..models.interfaces import HasReparamSampler, ProbabilisticModelType
 from ..observer import OBJECTIVE
@@ -260,13 +259,15 @@ class EfficientGlobalOptimization(
 
         points = self._optimizer(search_space, self._acquisition_function)
 
-        summary_writer = get_tensorboard_writer()
-        step_number = get_step_number()
+        summary_writer = logging.get_tensorboard_writer()
+        step_number = logging.get_step_number()
+
         if summary_writer:
             with summary_writer.as_default(step=step_number):
                 batched_points = tf.expand_dims(points, axis=0)
                 value = self._acquisition_function(batched_points)[0][0]
-                tf.summary.scalar("EGO.acquisition_function.maximum_found", value)
+                greedy = isinstance(self._builder, GreedyAcquisitionFunctionBuilder)
+                logging.scalar("EGO.acquisition_function/maximum_found" + "[0]" * greedy, value)
 
         if isinstance(self._builder, GreedyAcquisitionFunctionBuilder):
             for i in range(
@@ -286,7 +287,7 @@ class EfficientGlobalOptimization(
                     with summary_writer.as_default(step=step_number):
                         batched_points = tf.expand_dims(chosen_point, axis=0)
                         value = self._acquisition_function(batched_points)[0][0]
-                        tf.summary.scalar(f"EGO.acquisition_function.maximum_found.{i+1}", value)
+                        logging.scalar(f"EGO.acquisition_function/maximum_found[{i+1}]", value)
 
         return points
 
@@ -332,9 +333,12 @@ class AsynchronousRuleState:
                 # point to remove isn't there, nothing to do
                 return pending_points
 
+            # since we're compiling, we still need to handle pending_points = [] here
+            top = tf.cond(tf.math.greater(1, tf.shape(are_points_equal)[0]), lambda: 0, lambda: 1)
+
             # this line converts all bool values to 0 and 1
             # then finds first 1 and returns its index as 1x1 tensor
-            _, first_index_tensor = tf.math.top_k(tf.cast(are_points_equal, tf.int8), k=1)
+            _, first_index_tensor = tf.math.top_k(tf.cast(are_points_equal, tf.int8), k=top)
             # to use it as index for slicing, we need to convert 1x1 tensor to a TF scalar
             first_index = tf.reshape(first_index_tensor, [])
             return tf.concat(
@@ -690,8 +694,8 @@ class AsynchronousGreedy(
             new_points_batch = self._optimizer(search_space, self._acquisition_function)
             state = state.add_pending_points(new_points_batch)
 
-            summary_writer = get_tensorboard_writer()
-            step_number = get_step_number()
+            summary_writer = logging.get_tensorboard_writer()
+            step_number = logging.get_step_number()
 
             for i in range(self._num_query_points - 1):
                 # greedily allocate additional batch elements
@@ -707,8 +711,8 @@ class AsynchronousGreedy(
                     with summary_writer.as_default(step=step_number):
                         batched_point = tf.expand_dims(new_point, axis=0)
                         value = self._acquisition_function(batched_point)[0][0]
-                        tf.summary.scalar(
-                            f"AsyncGreedy.acquisition_function.maximum_found.{i}", value
+                        logging.scalar(
+                            f"AsyncGreedy.acquisition_function/maximum_found[{i}]", value
                         )
                 state = state.add_pending_points(new_point)
                 new_points_batch = tf.concat([new_points_batch, new_point], axis=0)
