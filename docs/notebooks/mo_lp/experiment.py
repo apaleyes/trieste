@@ -31,7 +31,7 @@ from trieste.acquisition.function.multi_objective import HIPPO
 def get_acquisition_function(name):
     if name == "BatchMC":
         return BatchMonteCarloExpectedHypervolumeImprovement(sample_size=100).using(OBJECTIVE)
-    elif name == "DistanceBased":
+    elif name == "HIPPO":
         base_acq = ExpectedHypervolumeImprovement().using(OBJECTIVE)
         return HIPPO(objective_tag=OBJECTIVE, base_acquisition_function_builder=base_acq)
     elif name == "KB":
@@ -50,6 +50,7 @@ class Config:
     n_optimization_steps: int = 3
     n_repeats: int = 5
     seed: int = None
+    filename_prefix: str = None
 
     def __post_init__(self):
         # it's ok to create it once as re-use
@@ -57,12 +58,13 @@ class Config:
         self.test_function = get_test_function(self.test_function_name)
 
     def create_acquisition_function(self):
-        # acquisition functions cn be stateful
+        # acquisition functions can be stateful
         # so we need to re-create it each time
         return get_acquisition_function(self.acquisition_method_name)
 
     def get_filename(self):
-        return f"{self.acquisition_method_name}_" \
+        return "" if self.filename_prefix is None else self.filename_prefix + \
+               f"{self.acquisition_method_name}_" \
                f"{self.test_function_name}_" \
                f"n_initial_points_{self.n_initial_points}_" \
                f"n_query_points_{self.n_query_points}_" \

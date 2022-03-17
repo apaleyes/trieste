@@ -14,7 +14,7 @@ def simple_1d():
     config = Config.from_dict(config_dict)
     single_run(config, save_to_file=True)
 
-    config_dict["acquisition_method_name"] = "DistanceBased"
+    config_dict["acquisition_method_name"] = "HIPPO"
     config = Config.from_dict(config_dict)
     single_run(config, save_to_file=True)
 
@@ -36,7 +36,7 @@ def gardner():
     config = Config.from_dict(config_dict)
     single_run(config, save_to_file=True)
 
-    config_dict["acquisition_method_name"] = "DistanceBased"
+    config_dict["acquisition_method_name"] = "HIPPO"
     config = Config.from_dict(config_dict)
     single_run(config, save_to_file=True)
 
@@ -59,7 +59,7 @@ def hartmann_ackley():
     config = Config.from_dict(config_dict)
     single_run(config, save_to_file=True)
 
-    config_dict["acquisition_method_name"] = "DistanceBased"
+    config_dict["acquisition_method_name"] = "HIPPO"
     config_dict["n_optimization_steps"] = 20
     config = Config.from_dict(config_dict)
     single_run(config, save_to_file=True)
@@ -83,7 +83,7 @@ def zdt3():
     config = Config.from_dict(config_dict)
     single_run(config, save_to_file=True)
 
-    config_dict["acquisition_method_name"] = "DistanceBased"
+    config_dict["acquisition_method_name"] = "HIPPO"
     config = Config.from_dict(config_dict)
     single_run(config, save_to_file=True)
 
@@ -106,7 +106,7 @@ def DTLZ2_3_objectives():
     # config = Config.from_dict(config_dict)
     # single_run(config, save_to_file=True)
 
-    config_dict["acquisition_method_name"] = "DistanceBased"
+    config_dict["acquisition_method_name"] = "HIPPO"
     config = Config.from_dict(config_dict)
     single_run(config, save_to_file=True)
 
@@ -128,7 +128,7 @@ def VLMOP2():
     config = Config.from_dict(config_dict)
     single_run(config, save_to_file=True)
 
-    config_dict["acquisition_method_name"] = "DistanceBased"
+    config_dict["acquisition_method_name"] = "HIPPO"
     config = Config.from_dict(config_dict)
     single_run(config, save_to_file=True)
 
@@ -150,7 +150,7 @@ def BraninGoldsteinPrice():
     config = Config.from_dict(config_dict)
     single_run(config, save_to_file=True)
 
-    config_dict["acquisition_method_name"] = "DistanceBased"
+    config_dict["acquisition_method_name"] = "HIPPO"
     config = Config.from_dict(config_dict)
     single_run(config, save_to_file=True)
 
@@ -168,7 +168,7 @@ def RosenbrokAlpine2():
         "n_repeats": 10
     }
 
-    config_dict["acquisition_method_name"] = "DistanceBased"
+    config_dict["acquisition_method_name"] = "HIPPO"
     config = Config.from_dict(config_dict)
     single_run(config, save_to_file=True)
 
@@ -181,6 +181,31 @@ def RosenbrokAlpine2():
     single_run(config, save_to_file=True)
 
 
+def many_batches():
+    config_dict = {
+        "test_function_name": test_functions.ScaledHartmannAckley6D.name,
+        "n_initial_points": 6,
+        "n_query_points": 5,
+        "n_optimization_steps": 10,
+        "n_repeats": 10,
+        "filename_prefix": "batch-size-exp"
+    }
+
+    # batch_sizes = [5, 10, 15, 20]
+    batch_sizes = [5]
+
+    for batch_size in batch_sizes:
+        config_dict["n_query_points"] = batch_size
+
+        config_dict["acquisition_method_name"] = "HIPPO"
+        config = Config.from_dict(config_dict)
+        single_run(config, save_to_file=True)
+
+        config_dict["acquisition_method_name"] = "KB"
+        config = Config.from_dict(config_dict)
+        single_run(config, save_to_file=True)
+
+
 if __name__ == '__main__':
     # simple_1d()
     # gardner()
@@ -189,4 +214,5 @@ if __name__ == '__main__':
     # DTLZ2_3_objectives()
     # VLMOP2()
     # BraninGoldsteinPrice()
-    RosenbrokAlpine2()
+    # RosenbrokAlpine2()
+    many_batches()
