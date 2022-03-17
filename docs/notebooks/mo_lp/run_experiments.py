@@ -191,8 +191,7 @@ def many_batches():
         "filename_prefix": "batch-size-exp"
     }
 
-    # batch_sizes = [5, 10, 15, 20]
-    batch_sizes = [5]
+    batch_sizes = [5, 10, 15, 20]
 
     for batch_size in batch_sizes:
         config_dict["n_query_points"] = batch_size
