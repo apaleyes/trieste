@@ -24,14 +24,16 @@ from trieste.acquisition.multi_objective.pareto import Pareto, get_reference_poi
 
 from test_functions import TestFunction, get_test_function
 from generate_true_pareto_fronts import read_true_pf
-from mo_penalization import MOLocalPenalizationAcquisitionFunction
+# from mo_penalization import MOLocalPenalizationAcquisitionFunction
+from trieste.acquisition.function.multi_objective import HIPPO
 
 
 def get_acquisition_function(name):
     if name == "BatchMC":
         return BatchMonteCarloExpectedHypervolumeImprovement(sample_size=100).using(OBJECTIVE)
     elif name == "DistanceBased":
-        return MOLocalPenalizationAcquisitionFunction().using(OBJECTIVE)
+        base_acq = ExpectedHypervolumeImprovement().using(OBJECTIVE)
+        return HIPPO(objective_tag=OBJECTIVE, base_acquisition_function_builder=base_acq)
     elif name == "KB":
         return Fantasizer(ExpectedHypervolumeImprovement())
     else:
