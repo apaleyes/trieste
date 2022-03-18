@@ -63,7 +63,7 @@ class Config:
         return get_acquisition_function(self.acquisition_method_name)
 
     def get_filename(self):
-        return "" if self.filename_prefix is None else self.filename_prefix + \
+        return ("" if self.filename_prefix is None else self.filename_prefix) + \
                f"{self.acquisition_method_name}_" \
                f"{self.test_function_name}_" \
                f"n_initial_points_{self.n_initial_points}_" \

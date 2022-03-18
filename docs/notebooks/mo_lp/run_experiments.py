@@ -74,22 +74,22 @@ def zdt3():
     config_dict = {
         "test_function_name": test_functions.ZDT3.name,
         "n_initial_points": 3,
-        "n_query_points": 4,
+        "n_query_points": 2,
         "n_optimization_steps": 5,
-        "n_repeats": 10
+        "n_repeats": 1
     }
 
     config_dict["acquisition_method_name"] = "BatchMC"
     config = Config.from_dict(config_dict)
     single_run(config, save_to_file=True)
 
-    config_dict["acquisition_method_name"] = "HIPPO"
-    config = Config.from_dict(config_dict)
-    single_run(config, save_to_file=True)
+    # config_dict["acquisition_method_name"] = "HIPPO"
+    # config = Config.from_dict(config_dict)
+    # single_run(config, save_to_file=True)
 
-    config_dict["acquisition_method_name"] = "KB"
-    config = Config.from_dict(config_dict)
-    single_run(config, save_to_file=True)
+    # config_dict["acquisition_method_name"] = "KB"
+    # config = Config.from_dict(config_dict)
+    # single_run(config, save_to_file=True)
 
 
 
@@ -191,7 +191,8 @@ def many_batches():
         "filename_prefix": "batch-size-exp"
     }
 
-    batch_sizes = [5, 10, 15, 20]
+    # batch_sizes = [5, 10, 15, 20]
+    batch_sizes = [10]
 
     for batch_size in batch_sizes:
         config_dict["n_query_points"] = batch_size
