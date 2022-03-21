@@ -93,8 +93,8 @@ def build_stacked_independent_objectives_model(data, n_obj):
     return TrainablePredictJointReparamModelStack(*gprs)
 
 
-def get_hv_regret(true_points, observed_points, num_initial_points):
-    ref_point = get_reference_point(observed_points)
+def get_hv_regret(true_points, observed_points, num_initial_points, reference_point=None):
+    ref_point = get_reference_point(observed_points) if reference_point is None else reference_point
     ideal_hv = Pareto(true_points).hypervolume_indicator(ref_point)
 
     hv_regret = []
