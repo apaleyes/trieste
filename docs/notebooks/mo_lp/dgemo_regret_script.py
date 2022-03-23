@@ -44,26 +44,40 @@
 
 import numpy as np
 from experiment import get_hv_regret
+from generate_true_pareto_fronts import read_true_pf
 from trieste.acquisition.multi_objective.pareto import get_reference_point
 import pathlib
 import re
 
+from test_functions import Gardner2D, ScaledHartmannAckley6D, BraninGoldsteinPrice, VLMOP2
+
 current_dir = pathlib.Path(__file__).parent
 
 problems = [
-    {"name": "dtlz2", "n_steps": 10, "n_seeds": 10, "n_init_points": 3, "n_query_points": 4, "n_vars": 4, "n_obj": 3},
-    {"name": "zdt3", "n_steps": 5, "n_seeds": 10, "n_init_points": 3, "n_query_points": 4, "n_vars": 6, "n_obj": 2}
+    # {"name": "dtlz2", "n_steps": 10, "n_seeds": 10, "n_init_points": 3, "n_query_points": 4, "n_vars": 4, "n_obj": 3},
+    # {"name": "zdt3", "n_steps": 5, "n_seeds": 10, "n_init_points": 3, "n_query_points": 4, "n_vars": 6, "n_obj": 2},
+    {"name": "gardner", "n_steps": 7, "n_seeds": 10, "n_init_points": 3, "n_query_points": 4, "n_vars": 2, "n_obj": 2,
+    "true_pf_filename": Gardner2D().true_pf_filename},
+    # {"name": "ha", "n_steps": 20, "n_seeds": 10, "n_init_points": 6, "n_query_points": 4, "n_vars": 6, "n_obj": 2,
+    # "true_pf_filename": ScaledHartmannAckley6D().true_pf_filename},
+    # {"name": "bgp", "n_steps": 10, "n_seeds": 10, "n_init_points": 3, "n_query_points": 4, "n_vars": 2, "n_obj": 2,
+    # "true_pf_filename": BraninGoldsteinPrice().true_pf_filename},
+    # {"name": "vlmop2", "n_steps": 10, "n_seeds": 10, "n_init_points": 3, "n_query_points": 4, "n_vars": 2, "n_obj": 2}
 ]
 
 dgemo_root = current_dir.joinpath("results/dgemo_results")
 save_to_file = True
 
 def process_result(problem):
-    true_pareto_file = str(dgemo_root.joinpath(problem["name"], "default/TrueParetoFront.csv").resolve())
+    if "true_pf_filename" in problem:
+        true_pf = read_true_pf(problem["true_pf_filename"])
+    else:
+        true_pareto_file = str(dgemo_root.joinpath(problem["name"], "default/TrueParetoFront.csv").resolve())
+        true_pf = np.genfromtxt(true_pareto_file, delimiter=',', skip_header=True)
+    
     evaluated_pareto_file_format = str(dgemo_root.joinpath(problem["name"], "default/dgemo/{0}/EvaluatedSamples.csv").resolve())
     log_file_format = str(dgemo_root.joinpath(problem["name"], "default/dgemo/{0}/log.txt").resolve())
-
-    true_pf = np.genfromtxt(true_pareto_file, delimiter=',', skip_header=True)
+   
 
     hv_regret = []
     times = []
