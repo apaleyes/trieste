@@ -182,28 +182,40 @@ def RosenbrokAlpine2():
 
 
 def many_batches():
+    test_func_names = [
+        #test_functions.ScaledHartmannAckley6D.name,
+        test_functions.VLMOP2.name,
+    ]
+
+    batch_n_steps = [
+        (5, 20),
+        (10, 10),
+        (20, 5),
+        (50, 2)
+    ]
+
     config_dict = {
-        "test_function_name": test_functions.ScaledHartmannAckley6D.name,
         "n_initial_points": 6,
-        "n_query_points": 5,
-        "n_optimization_steps": 10,
-        "n_repeats": 10,
+        "n_repeats": 6,
         "filename_prefix": "batch-size-exp"
     }
 
     # batch_sizes = [5, 10, 15, 20]
-    batch_sizes = [10]
+    # batch_sizes = [10]
 
-    for batch_size in batch_sizes:
-        config_dict["n_query_points"] = batch_size
+    for test_func_name in test_func_names:
+        config_dict["test_function_name"] = test_func_name
+        for batch_size, steps in batch_n_steps:
+            config_dict["n_query_points"] = batch_size
+            config_dict["n_optimization_steps"] = steps
 
-        config_dict["acquisition_method_name"] = "HIPPO"
-        config = Config.from_dict(config_dict)
-        single_run(config, save_to_file=True)
+            config_dict["acquisition_method_name"] = "HIPPO"
+            config = Config.from_dict(config_dict)
+            single_run(config, save_to_file=True)
 
-        config_dict["acquisition_method_name"] = "KB"
-        config = Config.from_dict(config_dict)
-        single_run(config, save_to_file=True)
+            config_dict["acquisition_method_name"] = "KB"
+            config = Config.from_dict(config_dict)
+            single_run(config, save_to_file=True)
 
 
 if __name__ == '__main__':
