@@ -183,14 +183,14 @@ def RosenbrokAlpine2():
 
 def many_batches():
     test_func_names = [
-        #test_functions.ScaledHartmannAckley6D.name,
-        test_functions.VLMOP2.name,
+        test_functions.ScaledHartmannAckley6D.name,
+        #test_functions.VLMOP2.name,
     ]
 
     batch_n_steps = [
-        (5, 30),
-        (10, 15),
-        (25, 6),
+        #(5, 30),
+        #(10, 15),
+        #(25, 6),
         (50, 3)
     ]
 
@@ -199,9 +199,6 @@ def many_batches():
         "n_repeats": 6,
         "filename_prefix": "batch-size-exp"
     }
-
-    # batch_sizes = [5, 10, 15, 20]
-    # batch_sizes = [10]
 
     for test_func_name in test_func_names:
         config_dict["test_function_name"] = test_func_name
