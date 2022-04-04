@@ -629,6 +629,19 @@ class hippo_penalizer:
 
         # warp the distance so that resulting value is from 0 to (nearly) 1
         warped_d = (2.0 / math.pi) * tf.math.atan(d)
+
+        # Warping function below is a modified Mollifier
+        # https://en.wikipedia.org/wiki/Mollifier#Concrete_example
+        # https://math.stackexchange.com/a/846757
+        # we use to achieve so called Local HIPPO
+        # meaning that penalisation is localised in the vicinity of a batch point
+        # it works much in practice though (discovers worse pareto fronts, and takes more time because of where)
+        # but let's leave it for posterity
+
+        # k = tf.cast(0.3, d.dtype)
+        # # d cannot be less than 0, so d<=0 clause isn't needed
+        # warped_d = tf.where(d < 1.0, tf.math.exp(1.0 + -1.0/(1.0 - (k * d - 1.0)**2)), tf.ones_like(d))
+
         penalty = tf.reduce_prod(warped_d, axis=-1)  # [N,]
 
         return tf.reshape(penalty, (-1, 1))
