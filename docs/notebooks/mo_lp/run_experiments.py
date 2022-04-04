@@ -10,17 +10,17 @@ def simple_1d():
         "n_repeats": 10
     }
 
-    config_dict["acquisition_method_name"] = "BatchMC"
-    config = Config.from_dict(config_dict)
-    single_run(config, save_to_file=True)
+    # config_dict["acquisition_method_name"] = "BatchMC"
+    # config = Config.from_dict(config_dict)
+    # single_run(config, save_to_file=True)
 
-    config_dict["acquisition_method_name"] = "HIPPO"
-    config = Config.from_dict(config_dict)
-    single_run(config, save_to_file=True)
+    # config_dict["acquisition_method_name"] = "HIPPO"
+    # config = Config.from_dict(config_dict)
+    # single_run(config, save_to_file=True)
 
-    config_dict["acquisition_method_name"] = "KB"
-    config = Config.from_dict(config_dict)
-    single_run(config, save_to_file=True)
+    # config_dict["acquisition_method_name"] = "KB"
+    # config = Config.from_dict(config_dict)
+    # single_run(config, save_to_file=True)
 
 
 def gardner():
@@ -32,17 +32,17 @@ def gardner():
         "n_repeats": 10
     }
 
-    config_dict["acquisition_method_name"] = "BatchMC"
-    config = Config.from_dict(config_dict)
-    single_run(config, save_to_file=True)
+    # config_dict["acquisition_method_name"] = "BatchMC"
+    # config = Config.from_dict(config_dict)
+    # single_run(config, save_to_file=True)
 
-    config_dict["acquisition_method_name"] = "HIPPO"
-    config = Config.from_dict(config_dict)
-    single_run(config, save_to_file=True)
+    # config_dict["acquisition_method_name"] = "HIPPO"
+    # config = Config.from_dict(config_dict)
+    # single_run(config, save_to_file=True)
 
-    config_dict["acquisition_method_name"] = "KB"
-    config = Config.from_dict(config_dict)
-    single_run(config, save_to_file=True)
+    # config_dict["acquisition_method_name"] = "KB"
+    # config = Config.from_dict(config_dict)
+    # single_run(config, save_to_file=True)
 
 
 def hartmann_ackley():
@@ -54,20 +54,20 @@ def hartmann_ackley():
         "n_repeats": 10
     }
 
-    config_dict["acquisition_method_name"] = "BatchMC"
-    config_dict["n_optimization_steps"] = 15 # BatchMC really struggles
-    config = Config.from_dict(config_dict)
-    single_run(config, save_to_file=True)
+    # config_dict["acquisition_method_name"] = "BatchMC"
+    # config_dict["n_optimization_steps"] = 15 # BatchMC really struggles
+    # config = Config.from_dict(config_dict)
+    # single_run(config, save_to_file=True)
 
     config_dict["acquisition_method_name"] = "HIPPO"
     config_dict["n_optimization_steps"] = 20
     config = Config.from_dict(config_dict)
     single_run(config, save_to_file=True)
 
-    config_dict["acquisition_method_name"] = "KB"
-    config_dict["n_optimization_steps"] = 20
-    config = Config.from_dict(config_dict)
-    single_run(config, save_to_file=True)
+    # config_dict["acquisition_method_name"] = "KB"
+    # config_dict["n_optimization_steps"] = 20
+    # config = Config.from_dict(config_dict)
+    # single_run(config, save_to_file=True)
 
 
 def zdt3():
@@ -79,9 +79,9 @@ def zdt3():
         "n_repeats": 1
     }
 
-    config_dict["acquisition_method_name"] = "BatchMC"
-    config = Config.from_dict(config_dict)
-    single_run(config, save_to_file=True)
+    # config_dict["acquisition_method_name"] = "BatchMC"
+    # config = Config.from_dict(config_dict)
+    # single_run(config, save_to_file=True)
 
     # config_dict["acquisition_method_name"] = "HIPPO"
     # config = Config.from_dict(config_dict)
@@ -110,9 +110,9 @@ def DTLZ2_3_objectives():
     config = Config.from_dict(config_dict)
     single_run(config, save_to_file=True)
 
-    config_dict["acquisition_method_name"] = "KB"
-    config = Config.from_dict(config_dict)
-    single_run(config, save_to_file=True)
+    # config_dict["acquisition_method_name"] = "KB"
+    # config = Config.from_dict(config_dict)
+    # single_run(config, save_to_file=True)
 
 
 def VLMOP2():
@@ -124,17 +124,17 @@ def VLMOP2():
         "n_repeats": 10
     }
 
-    config_dict["acquisition_method_name"] = "BatchMC"
-    config = Config.from_dict(config_dict)
-    single_run(config, save_to_file=True)
+    # config_dict["acquisition_method_name"] = "BatchMC"
+    # config = Config.from_dict(config_dict)
+    # single_run(config, save_to_file=True)
 
     config_dict["acquisition_method_name"] = "HIPPO"
     config = Config.from_dict(config_dict)
     single_run(config, save_to_file=True)
 
-    config_dict["acquisition_method_name"] = "KB"
-    config = Config.from_dict(config_dict)
-    single_run(config, save_to_file=True)
+    # config_dict["acquisition_method_name"] = "KB"
+    # config = Config.from_dict(config_dict)
+    # single_run(config, save_to_file=True)
 
 
 def BraninGoldsteinPrice():
@@ -146,17 +146,17 @@ def BraninGoldsteinPrice():
         "n_repeats": 10
     }
 
-    config_dict["acquisition_method_name"] = "BatchMC"
-    config = Config.from_dict(config_dict)
-    single_run(config, save_to_file=True)
+    # config_dict["acquisition_method_name"] = "BatchMC"
+    # config = Config.from_dict(config_dict)
+    # single_run(config, save_to_file=True)
 
     config_dict["acquisition_method_name"] = "HIPPO"
     config = Config.from_dict(config_dict)
     single_run(config, save_to_file=True)
 
-    config_dict["acquisition_method_name"] = "KB"
-    config = Config.from_dict(config_dict)
-    single_run(config, save_to_file=True)
+    # config_dict["acquisition_method_name"] = "KB"
+    # config = Config.from_dict(config_dict)
+    # single_run(config, save_to_file=True)
 
 
 def RosenbrokAlpine2():
@@ -183,14 +183,14 @@ def RosenbrokAlpine2():
 
 def many_batches():
     test_func_names = [
-        test_functions.ScaledHartmannAckley6D.name,
-        #test_functions.VLMOP2.name,
+        #test_functions.ScaledHartmannAckley6D.name,
+        test_functions.VLMOP2.name,
     ]
 
     batch_n_steps = [
-        #(5, 30),
-        #(10, 15),
-        #(25, 6),
+        (5, 30),
+        (10, 15),
+        (25, 6),
         (50, 3)
     ]
 
@@ -210,18 +210,18 @@ def many_batches():
             config = Config.from_dict(config_dict)
             single_run(config, save_to_file=True)
 
-            config_dict["acquisition_method_name"] = "KB"
-            config = Config.from_dict(config_dict)
-            single_run(config, save_to_file=True)
+            #config_dict["acquisition_method_name"] = "KB"
+            #config = Config.from_dict(config_dict)
+            #single_run(config, save_to_file=True)
 
 
 if __name__ == '__main__':
     # simple_1d()
     # gardner()
-    # hartmann_ackley()
+    hartmann_ackley()
     # zdt3()
-    # DTLZ2_3_objectives()
-    # VLMOP2()
-    # BraninGoldsteinPrice()
+    DTLZ2_3_objectives()
+    VLMOP2()
+    BraninGoldsteinPrice()
     # RosenbrokAlpine2()
-    many_batches()
+    # many_batches()

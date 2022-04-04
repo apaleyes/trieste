@@ -628,7 +628,10 @@ class hippo_penalizer:
         d = tf.norm(standardize_mean_diff, axis=-1)  # [N, B]
 
         # warp the distance so that resulting value is from 0 to (nearly) 1
-        warped_d = (2.0 / math.pi) * tf.math.atan(d)
+        # here are some alternatives we consider
+        # warped_d = 2 * (1.0 / (1.0 + tf.exp(-d)) - 0.5) # [N, B]
+        # warped_d = 1.0 - 1.0 / (1.0 + d) # [N, B]
+        warped_d = (2.0 / math.pi) * tf.math.atan(d) # [N, B]
 
         # Warping function below is a modified Mollifier
         # https://en.wikipedia.org/wiki/Mollifier#Concrete_example
