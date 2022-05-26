@@ -281,6 +281,7 @@ def plot_mobo_points_in_obj_space(
     c_pass="tab:green",
     c_fail="tab:red",
     c_pareto="tab:purple",
+    m_pareto=None,
     only_plot_pareto=False,
 ):
     """
@@ -315,7 +316,7 @@ def plot_mobo_points_in_obj_space(
 
     pts = obs_values.numpy() if tf.is_tensor(obs_values) else obs_values
     num_pts = pts.shape[0]
-
+    pareto_pts = pts[idx_pareto]
     col_pts, mark_pts = format_point_markers(
         num_pts, num_init, idx_pareto, mask_fail, m_init, m_add, c_pass, c_fail, c_pareto
     )
@@ -324,20 +325,27 @@ def plot_mobo_points_in_obj_space(
         mark_pts = mark_pts[idx_pareto]
         pts = pts[idx_pareto]
 
+    if m_pareto is not None:
+        mark_pts[idx_pareto] = m_pareto
+
     if obj_num == 2:
         fig, ax = plt.subplots(figsize=figsize)
     else:
         fig = plt.figure()
         ax = fig.add_subplot(111, projection="3d")
     for i in range(pts.shape[0]):
-        ax.scatter(*pts[i], c=col_pts[i], marker=mark_pts[i])
+        if not np.isin(i, idx_pareto):
+            ax.scatter(*pts[i], c=col_pts[i], marker=mark_pts[i])
+    for i in range(pts.shape[0]):
+        if np.isin(i, idx_pareto):
+            ax.scatter(*pts[i], c=col_pts[i], marker=mark_pts[i])
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     if obj_num == 3:
         ax.set_zlabel(zlabel)
     if title is not None:
         ax.set_title(title)
-    return fig, ax
+    return fig, ax, pareto_pts
 
 
 def plot_mobo_history(
