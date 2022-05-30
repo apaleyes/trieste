@@ -615,6 +615,9 @@ class hippo_penalizer:
         )
 
         x_means_expanded = x_means[:, None, :]
+        x_vars_expanded = x_vars[:, None, :]
+        x_stddevs_expanded = tf.sqrt(x_vars_expanded)
+
         pending_means_expanded = self._pending_means[None, :, :]
         pending_vars_expanded = self._pending_vars[None, :, :]
         pending_stddevs_expanded = tf.sqrt(pending_vars_expanded)
@@ -622,11 +625,20 @@ class hippo_penalizer:
         # this computes Mahalanobis distance between x and pending points
         # since we assume objectives to be independent
         # it reduces to regular Eucledian distance normalized by standard deviation
+
+        # old version, normalized only by variance in pending point
         standardize_mean_diff = (
             tf.abs(x_means_expanded - pending_means_expanded) / pending_stddevs_expanded
         )  # [N, B, K]
-        d = tf.norm(standardize_mean_diff, axis=-1)  # [N, B]
+        d = tf.norm(standardize_mean_diff, axis=-1)
 
+        # # new version, normalized by variance in both pending point and candidate point
+        # squared_mean_diff = tf.math.square(x_means_expanded - pending_means_expanded)
+        # standardize_squared_mean_diff = (
+        #     squared_mean_diff / (x_stddevs_expanded * pending_stddevs_expanded)
+        # )  # [N, B, K]
+        # d = tf.math.sqrt(tf.math.reduce_sum(standardize_squared_mean_diff, axis=-1))  # [N, B]
+        
         # warp the distance so that resulting value is from 0 to (nearly) 1
         # here are some alternatives we consider
         # warped_d = 2 * (1.0 / (1.0 + tf.exp(-d)) - 0.5) # [N, B]
